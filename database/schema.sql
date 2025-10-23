@@ -125,7 +125,6 @@ CREATE TABLE wit_internal_website.view (
     view_user_id BIGINT UNSIGNED NOT NULL,
     view_event_id BIGINT UNSIGNED NOT NULL,
     view_template_id BIGINT UNSIGNED,
-    TemplateID INT NOT NULL, -- Included in PK as per image
     PRIMARY KEY (view_user_id, view_event_id, view_template_id), -- Composite Primary Key as shown
     FOREIGN KEY (view_user_id) REFERENCES wit_internal_website.user (user_id) ON DELETE CASCADE,
     FOREIGN KEY (view_event_id) REFERENCES wit_internal_website.event (event_id) ON DELETE CASCADE,
