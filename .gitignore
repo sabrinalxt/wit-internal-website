@@ -1,0 +1,19 @@
+# Node.js dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment files 
+.env
+.env.local
+.env.*.local
+
+# Prisma generated client (can be regenerated anytime)
+generated/
+prisma/generated/
+
+# TypeScript cache
+*.tsbuildinfo
+

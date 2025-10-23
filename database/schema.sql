@@ -1,132 +1,111 @@
+-- Drop existing schema if you want to start fresh
 DROP SCHEMA IF EXISTS wit_internal_website;
-
 CREATE SCHEMA wit_internal_website;
+USE wit_internal_website;
 
---
--- Table: ROLE
---
-CREATE TABLE wit_internal_website.role (
-    role_id SERIAL PRIMARY KEY, -- Using SERIAL for auto-incrementing integer ID
-    role_name VARCHAR(50) NOT NULL UNIQUE CHECK (role_name IN ('Requestor', 'Approver', 'Admin', 'Viewer'))
+-- ENUMs
+CREATE TYPE role_name_enum AS ENUM ('Requestor', 'Approver', 'Admin', 'Viewer');
+CREATE TYPE proposal_type_enum AS ENUM ('IPA', 'FA');
+
+-- Role table
+CREATE TABLE role (
+    role_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_name ENUM('Requestor', 'Approver', 'Admin', 'Viewer') NOT NULL UNIQUE
 );
 
----
-
---
--- Table: USER
---
-CREATE TABLE wit_internal_website.user (
-    user_id SERIAL PRIMARY KEY,
+-- User table
+CREATE TABLE user (
+    user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash CHAR(60) -- Assuming a secure hash (e.g., bcrypt)
+    password_hash CHAR(60)
 );
 
----
-
---
--- Table: USER_ROLE (Many-to-Many relationship between USER and ROLE)
---
-CREATE TABLE wit_internal_website.user_role (
-    user_id INT NOT NULL REFERENCES wit_internal_website.user (user_id) ON DELETE CASCADE,
-    role_id INT NOT NULL REFERENCES wit_internal_website.role (role_id) ON DELETE CASCADE
+-- User_Role table (many-to-many)
+CREATE TABLE user_role (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    UNIQUE KEY user_role_unique(user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES role(role_id) ON DELETE CASCADE
 );
 
----
-
---
--- Table: PROPOSAL
---
-CREATE TABLE wit_internal_website.proposal (
-    proposal_id SERIAL PRIMARY KEY,
+-- Proposal table
+CREATE TABLE proposal (
+    proposal_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     proposal_name VARCHAR(255) NOT NULL,
-    proposal_type VARCHAR(50) NOT NULL CHECK (proposal_type IN ('IPA', 'FA')), -- Assuming Type is either 'IPA' or 'FA'
+    proposal_type ENUM('IPA', 'FA') NOT NULL,
     proposal_status VARCHAR(50) NOT NULL,
-    date_subitted timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    date_reviewed timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    requestor_id INT NOT NULL REFERENCES wit_internal_website.user (user_id),
-    approver_id INT REFERENCES wit_internal_website.user (user_id)
+    date_submitted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_reviewed TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    requestor_id BIGINT NOT NULL,
+    approver_id BIGINT,
+    FOREIGN KEY (requestor_id) REFERENCES user(user_id),
+    FOREIGN KEY (approver_id) REFERENCES user(user_id)
 );
 
----
-
---
--- Table: TEMPLATE
---
-CREATE TABLE wit_internal_website.template (
-    template_id SERIAL PRIMARY KEY,
+-- Template table
+CREATE TABLE template (
+    template_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     template_name VARCHAR(255) NOT NULL,
     template_type VARCHAR(50),
     content_link VARCHAR(512),
-    admin_id INT NOT NULL REFERENCES wit_internal_website.user (user_id)
+    admin_id BIGINT NOT NULL,
+    FOREIGN KEY (admin_id) REFERENCES user(user_id)
 );
 
----
-
---
--- Table: EVENT
---
-CREATE TABLE wit_internal_website.event (
-    event_id SERIAL PRIMARY KEY,
+-- Event table
+CREATE TABLE event (
+    event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     event_name VARCHAR(255) NOT NULL,
     event_date DATE,
-    pillar VARCHAR(100), -- Assuming Pillar is a string name
-    proposal_id INT NOT NULL REFERENCES wit_internal_website.proposal (proposal_id),
-    admin_id INT NOT NULL REFERENCES wit_internal_website.user (user_id)
+    pillar VARCHAR(100),
+    proposal_id BIGINT NOT NULL,
+    admin_id BIGINT NOT NULL,
+    FOREIGN KEY (proposal_id) REFERENCES proposal(proposal_id),
+    FOREIGN KEY (admin_id) REFERENCES user(user_id)
 );
 
----
-
---
--- Table: NETWORK_CONTACT (Could also be called EXTERNAL_CONTACT)
---
-CREATE TABLE wit_internal_website.network_contact (
-    network_contact_id SERIAL PRIMARY KEY,
+-- Network_Contact table
+CREATE TABLE network_contact (
+    network_contact_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     network_contact_name VARCHAR(255) NOT NULL,
     network_contact_email VARCHAR(255) UNIQUE,
     network_contact_association VARCHAR(255),
     pillar_interest VARCHAR(100)
 );
 
----
-
---
--- Table: EVENT_CONTACT (Many-to-Many relationship between EVENT and NETWORK_CONTACT)
---
-CREATE TABLE wit_internal_website.event_contact (
-    event_contact_event_id BIGINT UNSIGNED NOT NULL,
-    event_contact_contact_id BIGINT UNSIGNED NOT NULL,
-    event_contact_association VARCHAR(255), -- Additional attribute from the model
-    PRIMARY KEY (event_contact_event_id, event_contact_contact_id),
-    FOREIGN KEY (event_contact_event_id) REFERENCES wit_internal_website.event (event_id) ON DELETE CASCADE,
-    FOREIGN KEY (event_contact_contact_id) REFERENCES wit_internal_website.network_contact (network_contact_id) ON DELETE CASCADE
+-- Event_Contact table (many-to-many)
+CREATE TABLE event_contact (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_id BIGINT NOT NULL,
+    contact_id BIGINT NOT NULL,
+    event_contact_association VARCHAR(255),
+    UNIQUE KEY event_contact_unique(event_id, contact_id),
+    FOREIGN KEY (event_id) REFERENCES event(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (contact_id) REFERENCES network_contact(network_contact_id) ON DELETE CASCADE
 );
 
----
-
---
--- Table: ACCESS (Permission for a User to see a specific Template)
---
-CREATE TABLE wit_internal_website.access (
-    access_user_id BIGINT UNSIGNED NOT NULL,
-    access_template_id BIGINT UNSIGNED NOT NULL,
-    PRIMARY KEY (access_user_id, access_template_id),
-    FOREIGN KEY (access_user_id) REFERENCES wit_internal_website.user (user_id) ON DELETE CASCADE,
-    FOREIGN KEY (access_template_id) REFERENCES wit_internal_website.template (template_id) ON DELETE CASCADE
+-- Access table (User permission to see Template)
+CREATE TABLE access (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    template_id BIGINT NOT NULL,
+    UNIQUE KEY access_unique(user_id, template_id),
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (template_id) REFERENCES template(template_id) ON DELETE CASCADE
 );
 
----
-
---
--- Table: VIEW (Record of a User viewing a specific Event)
---
-CREATE TABLE wit_internal_website.view (
-    view_user_id BIGINT UNSIGNED NOT NULL,
-    view_event_id BIGINT UNSIGNED NOT NULL,
-    view_template_id BIGINT UNSIGNED,
-    PRIMARY KEY (view_user_id, view_event_id, view_template_id), -- Composite Primary Key as shown
-    FOREIGN KEY (view_user_id) REFERENCES wit_internal_website.user (user_id) ON DELETE CASCADE,
-    FOREIGN KEY (view_event_id) REFERENCES wit_internal_website.event (event_id) ON DELETE CASCADE,
-    FOREIGN KEY (view_template_id) REFERENCES wit_internal_website.template (template_id) ON DELETE CASCADE
+-- View table (User viewing Event/Template)
+CREATE TABLE view (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
+    template_id BIGINT,
+    UNIQUE KEY view_unique(user_id, event_id, template_id),
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES event(event_id) ON DELETE CASCADE,
+    FOREIGN KEY (template_id) REFERENCES template(template_id) ON DELETE CASCADE
 );
