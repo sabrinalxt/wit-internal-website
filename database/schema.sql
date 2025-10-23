@@ -1,9 +1,13 @@
+DROP SCHEMA IF EXISTS wit_internal_website;
+
+CREATE SCHEMA wit_internal_website;
+
 --
 -- Table: ROLE
 --
-CREATE TABLE ROLE (
-    RoleID SERIAL PRIMARY KEY, -- Using SERIAL for auto-incrementing integer ID
-    RoleName VARCHAR(50) NOT NULL UNIQUE CHECK (RoleName IN ('Requestor', 'Approver', 'Admin', 'Viewer'))
+CREATE TABLE wit_internal_website.role (
+    role_id SERIAL PRIMARY KEY, -- Using SERIAL for auto-incrementing integer ID
+    role_name VARCHAR(50) NOT NULL UNIQUE CHECK (role_name IN ('Requestor', 'Approver', 'Admin', 'Viewer'))
 );
 
 ---
@@ -11,12 +15,12 @@ CREATE TABLE ROLE (
 --
 -- Table: USER
 --
-CREATE TABLE "USER" (
-    UserID SERIAL PRIMARY KEY,
-    FirstName VARCHAR(100) NOT NULL,
-    LastName VARCHAR(100) NOT NULL,
-    Email VARCHAR(255) NOT NULL UNIQUE,
-    PasswordHash CHAR(60) -- Assuming a secure hash (e.g., bcrypt)
+CREATE TABLE wit_internal_website.user (
+    user_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash CHAR(60) -- Assuming a secure hash (e.g., bcrypt)
 );
 
 ---
@@ -24,12 +28,9 @@ CREATE TABLE "USER" (
 --
 -- Table: USER_ROLE (Many-to-Many relationship between USER and ROLE)
 --
-CREATE TABLE USER_ROLE (
-    UserID INT NOT NULL,
-    RoleID INT NOT NULL,
-    PRIMARY KEY (UserID, RoleID),
-    FOREIGN KEY (UserID) REFERENCES "USER" (UserID) ON DELETE CASCADE,
-    FOREIGN KEY (RoleID) REFERENCES ROLE (RoleID) ON DELETE CASCADE
+CREATE TABLE wit_internal_website.user_role (
+    user_id INT NOT NULL REFERENCES wit_internal_website.user (user_id) ON DELETE CASCADE,
+    role_id INT NOT NULL REFERENCES wit_internal_website.role (role_id) ON DELETE CASCADE
 );
 
 ---
@@ -37,17 +38,15 @@ CREATE TABLE USER_ROLE (
 --
 -- Table: PROPOSAL
 --
-CREATE TABLE PROPOSAL (
-    ProposalID SERIAL PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Type VARCHAR(50) NOT NULL CHECK (Type IN ('IPA', 'FA')), -- Assuming Type is either 'IPA' or 'FA'
-    Status VARCHAR(50) NOT NULL,
-    DateSubmitted TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    DateReviewed TIMESTAMP WITH TIME ZONE,
-    RequestorID INT NOT NULL,
-    ApproverID INT, -- ApproverID can be NULL initially
-    FOREIGN KEY (RequestorID) REFERENCES "USER" (UserID),
-    FOREIGN KEY (ApproverID) REFERENCES "USER" (UserID)
+CREATE TABLE wit_internal_website.proposal (
+    proposal_id SERIAL PRIMARY KEY,
+    proposal_name VARCHAR(255) NOT NULL,
+    proposal_type VARCHAR(50) NOT NULL CHECK (proposal_type IN ('IPA', 'FA')), -- Assuming Type is either 'IPA' or 'FA'
+    proposal_status VARCHAR(50) NOT NULL,
+    date_subitted timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_reviewed timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    requestor_id INT NOT NULL REFERENCES wit_internal_website.user (user_id),
+    approver_id INT REFERENCES wit_internal_website.user (user_id)
 );
 
 ---
@@ -55,13 +54,12 @@ CREATE TABLE PROPOSAL (
 --
 -- Table: TEMPLATE
 --
-CREATE TABLE TEMPLATE (
-    TemplateID SERIAL PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Type VARCHAR(50),
-    ContentLink VARCHAR(512),
-    AdminID INT NOT NULL,
-    FOREIGN KEY (AdminID) REFERENCES "USER" (UserID)
+CREATE TABLE wit_internal_website.template (
+    template_id SERIAL PRIMARY KEY,
+    template_name VARCHAR(255) NOT NULL,
+    template_type VARCHAR(50),
+    content_link VARCHAR(512),
+    admin_id INT NOT NULL REFERENCES wit_internal_website.user (user_id)
 );
 
 ---
@@ -69,15 +67,13 @@ CREATE TABLE TEMPLATE (
 --
 -- Table: EVENT
 --
-CREATE TABLE EVENT (
-    EventID SERIAL PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Date DATE,
-    Pillar VARCHAR(100), -- Assuming Pillar is a string name
-    ProposalID INT NOT NULL,
-    AdminID INT NOT NULL,
-    FOREIGN KEY (ProposalID) REFERENCES PROPOSAL (ProposalID),
-    FOREIGN KEY (AdminID) REFERENCES "USER" (UserID)
+CREATE TABLE wit_internal_website.event (
+    event_id SERIAL PRIMARY KEY,
+    event_name VARCHAR(255) NOT NULL,
+    event_date DATE,
+    pillar VARCHAR(100), -- Assuming Pillar is a string name
+    proposal_id INT NOT NULL REFERENCES wit_internal_website.proposal (proposal_id),
+    admin_id INT NOT NULL REFERENCES wit_internal_website.user (user_id)
 );
 
 ---
@@ -85,12 +81,12 @@ CREATE TABLE EVENT (
 --
 -- Table: NETWORK_CONTACT (Could also be called EXTERNAL_CONTACT)
 --
-CREATE TABLE NETWORK_CONTACT (
-    ContactID SERIAL PRIMARY KEY,
-    Name VARCHAR(255) NOT NULL,
-    Email VARCHAR(255) UNIQUE,
-    Association VARCHAR(255),
-    PillarInterest VARCHAR(100)
+CREATE TABLE wit_internal_website.network_contact (
+    network_contact_id SERIAL PRIMARY KEY,
+    network_contact_name VARCHAR(255) NOT NULL,
+    network_contact_email VARCHAR(255) UNIQUE,
+    network_contact_association VARCHAR(255),
+    pillar_interest VARCHAR(100)
 );
 
 ---
@@ -98,13 +94,13 @@ CREATE TABLE NETWORK_CONTACT (
 --
 -- Table: EVENT_CONTACT (Many-to-Many relationship between EVENT and NETWORK_CONTACT)
 --
-CREATE TABLE EVENT_CONTACT (
-    EventID INT NOT NULL,
-    ContactID INT NOT NULL,
-    Association VARCHAR(255), -- Additional attribute from the model
-    PRIMARY KEY (EventID, ContactID),
-    FOREIGN KEY (EventID) REFERENCES EVENT (EventID) ON DELETE CASCADE,
-    FOREIGN KEY (ContactID) REFERENCES NETWORK_CONTACT (ContactID) ON DELETE CASCADE
+CREATE TABLE wit_internal_website.event_contact (
+    event_contact_event_id BIGINT UNSIGNED NOT NULL,
+    event_contact_contact_id BIGINT UNSIGNED NOT NULL,
+    event_contact_association VARCHAR(255), -- Additional attribute from the model
+    PRIMARY KEY (event_contact_event_id, event_contact_contact_id),
+    FOREIGN KEY (event_contact_event_id) REFERENCES wit_internal_website.event (event_id) ON DELETE CASCADE,
+    FOREIGN KEY (event_contact_contact_id) REFERENCES wit_internal_website.network_contact (network_contact_id) ON DELETE CASCADE
 );
 
 ---
@@ -112,12 +108,12 @@ CREATE TABLE EVENT_CONTACT (
 --
 -- Table: ACCESS (Permission for a User to see a specific Template)
 --
-CREATE TABLE ACCESS (
-    UserID INT NOT NULL,
-    TemplateID INT NOT NULL,
-    PRIMARY KEY (UserID, TemplateID),
-    FOREIGN KEY (UserID) REFERENCES "USER" (UserID) ON DELETE CASCADE,
-    FOREIGN KEY (TemplateID) REFERENCES TEMPLATE (TemplateID) ON DELETE CASCADE
+CREATE TABLE wit_internal_website.access (
+    access_user_id BIGINT UNSIGNED NOT NULL,
+    access_template_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (access_user_id, access_template_id),
+    FOREIGN KEY (access_user_id) REFERENCES wit_internal_website.user (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (access_template_id) REFERENCES wit_internal_website.template (template_id) ON DELETE CASCADE
 );
 
 ---
@@ -125,15 +121,13 @@ CREATE TABLE ACCESS (
 --
 -- Table: VIEW (Record of a User viewing a specific Event)
 --
-CREATE TABLE VIEW (
-    UserID INT NOT NULL,
-    EventID INT NOT NULL,
-    TemplateID INT, -- The model shows this as part of the PK, but it's redundant/unusual
-                      -- I'll keep it as a non-PK column or infer that a specific template was viewed *in the context of* the event.
-                      -- Based strictly on the image's Primary Key definition:
+CREATE TABLE wit_internal_website.view (
+    view_user_id BIGINT UNSIGNED NOT NULL,
+    view_event_id BIGINT UNSIGNED NOT NULL,
+    view_template_id BIGINT UNSIGNED,
     TemplateID INT NOT NULL, -- Included in PK as per image
-    PRIMARY KEY (UserID, EventID, TemplateID), -- Composite Primary Key as shown
-    FOREIGN KEY (UserID) REFERENCES "USER" (UserID) ON DELETE CASCADE,
-    FOREIGN KEY (EventID) REFERENCES EVENT (EventID) ON DELETE CASCADE,
-    FOREIGN KEY (TemplateID) REFERENCES TEMPLATE (TemplateID) ON DELETE CASCADE
+    PRIMARY KEY (view_user_id, view_event_id, view_template_id), -- Composite Primary Key as shown
+    FOREIGN KEY (view_user_id) REFERENCES wit_internal_website.user (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (view_event_id) REFERENCES wit_internal_website.event (event_id) ON DELETE CASCADE,
+    FOREIGN KEY (view_template_id) REFERENCES wit_internal_website.template (template_id) ON DELETE CASCADE
 );
