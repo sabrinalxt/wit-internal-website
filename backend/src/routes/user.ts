@@ -18,7 +18,7 @@ router.get("/", async (req, res) => {
     res.json(serializeBigInt(users));
     
   } catch (error: any) {
-    console.error("Error in getAllUsers:", error);
+    console.error("Error in getAllUsers: ", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -31,11 +31,11 @@ router.post("/", async (req, res) => {
     const newUser = await prisma.user.create({
       data: { first_name, last_name, email, password_hash },
     });
-    console.log("Created user:", newUser);
+    console.log("Created user: ", newUser);
     res.status(201).json(serializeBigInt(newUser));
 
   } catch (error: any) {
-    console.error("Error in createUser:", error);
+    console.error("Error in createUser: ", error);
     res.status(500).json({ message: error.message });
   }
 });
