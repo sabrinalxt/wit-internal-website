@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
   try {
     const users = await prisma.user.findMany();
     res.json(serializeBigInt(users));
-    
+
   } catch (error: any) {
     console.error("Error in getAllUsers:", error);
     res.status(500).json({ message: error.message });
@@ -39,5 +39,22 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
+// DELETE /users
+router.delete("/:id", async (req, res) => {
+  console.log("DELETE /users called");
+  try {
+    const user_id = BigInt(req.params.id);
+    const deletedUser = await prisma.user.delete({
+      where: { user_id },
+    });
+    console.log("Deleted user:", deletedUser);
+    res.status(200).json(serializeBigInt(deletedUser));
+  } catch(error: any) {
+    console.error("Error in deleteUser:", error);
+    res.status(500).json({ message: error.message})
+  }
+})
+
 
 export default router;
