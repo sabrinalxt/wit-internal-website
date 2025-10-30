@@ -19,7 +19,21 @@ export const createUser = async (data: {
   email: string;
   password_hash?: string;
 }) => {
-  return prisma.user.create({
+  return prisma.user.create({ data });
+};
+
+// Update user
+export const updateUser = async (
+  user_id: bigint,
+  data: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    password_hash?: string;
+  }
+) => {
+  return prisma.user.update({
+    where: { user_id },
     data,
   });
 };
