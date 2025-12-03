@@ -56,6 +56,18 @@ router.post("/", async (req, res) => {
   try {
     const { event_name, event_date, pillar, proposal_id, admin_id } = req.body;
 
+    // Check if proposal exists
+    const proposal = await prisma.proposal.findUnique({
+      where: { proposal_id: BigInt(proposal_id) },
+    });
+
+    if (!proposal) {
+      return res.status(400).json({
+        message: `Proposal with ID ${proposal_id} does not exist.`,
+      });
+    }
+
+    // Create event
     const newEvent = await createEvent({
       event_name,
       event_date: new Date(event_date),
@@ -63,13 +75,16 @@ router.post("/", async (req, res) => {
       proposal_id: BigInt(proposal_id),
       admin_id: BigInt(admin_id),
     });
-    console.log("Created Event: ", newEvent);
+
+    console.log("Created Event:", newEvent);
     res.status(201).json(serializeBigInt(newEvent));
+
   } catch (error: any) {
-    console.error("Error in createEvent: ", error);
+    console.error("Error in createEvent:", error);
     res.status(500).json({ message: error.message });
   }
 });
+
 
 // PUT /event/:id
 router.put("/:id", async (req, res) => {
@@ -81,6 +96,7 @@ router.put("/:id", async (req, res) => {
     const existingEvent = await prisma.event.findUnique({
       where: { event_id },
     });
+    
     if (!existingEvent) {
       return res.status(404).json({ message: "Event not found" });
     }
