@@ -2,12 +2,14 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import express from "express";
 import userRouter from "./routes/user";
+import eventRouter from "./routes/event";
 
 const app = express();
 app.use(express.json());
 
 // Routes
 app.use("/users", userRouter);
+app.use("/event", eventRouter);
 
 app.post("/test", (req, res) => {
   res.send("Hello world");
