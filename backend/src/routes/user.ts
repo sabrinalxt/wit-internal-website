@@ -27,7 +27,7 @@ router.get("/", async (req, res) => {
     console.log("Got all users: ", users);
     res.json(serializeBigInt(users));
   } catch (error: any) {
-    console.error("Error in getAllUsers:", error);
+    console.error("Error in getAllUsers: ", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -67,7 +67,7 @@ router.post("/", async (req, res) => {
     console.log("Created user: ", newUser);
     res.status(201).json(serializeBigInt(newUser));
   } catch (error: any) {
-    console.error("Error in createUser:", error);
+    console.error("Error in createUser: ", error);
     res.status(500).json({ message: error.message });
   }
 });
