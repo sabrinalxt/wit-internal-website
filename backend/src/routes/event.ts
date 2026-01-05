@@ -1,5 +1,7 @@
 import { Router } from "express";
 import prisma from "../prisma/client";
+import { serializeBigInt } from "../utils/serializeBigInt";
+import { authenticateToken } from "../middleware/authMiddleware";
 import {
   getAllEvents,
   getEventById,
@@ -9,13 +11,6 @@ import {
 } from "../services/eventServices";
 
 const router = Router();
-
-// Helper to convert BigInt in the db to string ==> JSON.stringify cannot handle BigInt used by Prisma
-function serializeBigInt(obj: any) {
-  return JSON.parse(
-    JSON.stringify(obj, (_, v) => (typeof v === "bigint" ? v.toString() : v))
-  );
-}
 
 // GET /event
 router.get("/", async (req, res) => {
@@ -50,7 +45,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // CREATE /event
-router.post("/", async (req, res) => {
+router.post("/", authenticateToken, async (req, res) => {
   console.log("CREATE /events called");
 
   try {

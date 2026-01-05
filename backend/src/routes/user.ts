@@ -1,5 +1,6 @@
 import { Router } from "express";
 import prisma from "../prisma/client";
+import { serializeBigInt } from "../utils/serializeBigInt";
 import {
   getAllUsers,
   getUserById,
@@ -9,13 +10,6 @@ import {
 } from "../services/userServices";
 
 const router = Router();
-
-// Helper to convert BigInt in the db to string ==> JSON.stringify cannot handle BigInt used by Prisma
-function serializeBigInt(obj: any) {
-  return JSON.parse(
-    JSON.stringify(obj, (_, v) => (typeof v === "bigint" ? v.toString() : v))
-  );
-}
 
 // GET /users
 router.get("/", async (req, res) => {
@@ -56,12 +50,17 @@ router.post("/", async (req, res) => {
   console.log("POST /users called");
 
   try {
-    const { first_name, last_name, email, password_hash } = req.body;
+    const { first_name, last_name, email, password } = req.body;
+
+    if (!first_name || !last_name || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
     const newUser = await createUser({
       first_name,
       last_name,
       email,
-      password_hash,
+      password,
     });
 
     console.log("Created user: ", newUser);
@@ -85,13 +84,13 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { first_name, last_name, email, password_hash } = req.body;
+    const { first_name, last_name, email, password } = req.body;
 
     const updatedUser = await updateUser(user_id, {
       first_name,
       last_name,
       email,
-      password_hash,
+      password,
     });
 
     console.log("Updated user:", updatedUser);

@@ -1,0 +1,24 @@
+  import express, { Request, Response } from "express";
+  import { login } from "../services/authService";
+  import { serializeBigInt } from "../utils/serializeBigInt";
+
+  const router = express.Router();
+
+  // LOGIN route
+  router.post("/login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+
+      // Validate required fields
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      // Call login service
+      const result = await login(email, password);
+      res.json(serializeBigInt(result));
+    } catch (err: any) {
+      res.status(401).json({ error: err.message });
+    }
+  });
+
+  export default router;

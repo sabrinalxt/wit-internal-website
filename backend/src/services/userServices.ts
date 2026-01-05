@@ -1,4 +1,5 @@
 import prisma from "../prisma/client";
+import bcrypt from "bcrypt";
 
 // Get all users
 export const getAllUsers = async () => {
@@ -12,29 +13,54 @@ export const getUserById = async (user_id: bigint) => {
   });
 };
 
-// Create new user
+// Create new user (hash password here)
 export const createUser = async (data: {
   first_name: string;
   last_name: string;
   email: string;
-  password_hash?: string;
+  password: string;
 }) => {
-  return prisma.user.create({ data });
+  // Hash password
+  const password_hash = await bcrypt.hash(data.password, 10);
+
+  return prisma.user.create({
+    data: {
+      first_name: data.first_name,
+      last_name: data.last_name,
+      email: data.email,
+      password_hash,
+    },
+    select: {
+      user_id: true,
+      email: true,
+    },
+  });
 };
 
-// Update user
+// Update user (rehash only if password is provided)
 export const updateUser = async (
   user_id: bigint,
   data: {
     first_name?: string;
     last_name?: string;
     email?: string;
-    password_hash?: string;
+    password?: string;
   }
 ) => {
+  const updateData: any = {
+    first_name: data.first_name,
+    last_name: data.last_name,
+    email: data.email,
+  };
+
+  // Checks if user updates password and hashes it
+  if (data.password) {
+    updateData.password_hash = await bcrypt.hash(data.password, 10);
+  }
+
   return prisma.user.update({
     where: { user_id },
-    data,
+    data: updateData,
   });
 };
 
