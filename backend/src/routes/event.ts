@@ -2,6 +2,7 @@ import { Router } from "express";
 import prisma from "../prisma/client";
 import { serializeBigInt } from "../utils/serializeBigInt";
 import { authenticateToken } from "../middleware/authMiddleware";
+import { authorizeRoles } from "../middleware/authRoles";
 import {
   getAllEvents,
   getEventById,
@@ -45,7 +46,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // CREATE /event
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) => {
   console.log("CREATE /events called");
 
   try {
