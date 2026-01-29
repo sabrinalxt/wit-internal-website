@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-gradient: radial-gradient(1200px 600px at -10% -10%, rgba(186,160,255,0.35), transparent),
+                 radial-gradient(800px 500px at 110% 10%, rgba(153,233,255,0.35), transparent),
+                 linear-gradient(180deg, #efe6ff 0%, #e6dbff 100%);
+}
+
+body {
+  @apply text-slate-900;
+  background: #F6F1E7;
+}
+
+/* Custom accent color for purple */
+.accent-purple {
+  color: #A0A0DB;
+}
+.bg-purple-accent {
+  background: #A0A0DB;
+}
+
+/* --- Custom FullCalendar SHADCN/Brand Styling --- */
+.fc {
+  background: #fff;
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px rgba(80,60,160,0.07);
+  border: 1px solid #ece8e1;
+  padding: 1.8rem 1.6rem 2.4rem 1.6rem;
+}
+.fc .fc-toolbar-title {
+  color: #A0A0DB;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.fc .fc-button,
+.fc .fc-button-primary {
+  background: #A0A0DB;
+  border: none;
+  color: #F6F1E7;
+  border-radius: .75rem;
+  font-weight: 600;
+  transition: filter .12s;
+}
+.fc .fc-button:hover,
+.fc .fc-button-active,
+.fc .fc-button-primary:hover,
+.fc .fc-button-primary.fc-button-active {
+  filter: brightness(1.07);
+  background: #9990ce;
+}
+.fc .fc-daygrid-day {
+  border: 1px solid #eee8de;
+  background: transparent;
+  transition: background 0.1s;
+}
+.fc .fc-daygrid-day:hover {
+  background: #e8e3f7;
+}
+.fc .fc-daygrid-day.fc-day-today {
+  background: #edeafd;
+  position: relative;
+}
+.fc .fc-col-header-cell {
+  color: #A0A0DB;
+  font-weight: bold;
+  padding-bottom: 6px;
+}
+.fc .fc-daygrid-event {
+  background: #A0A0DB;
+  color: #fff;
+  border-radius: .5rem;
+  border: none;
+  font-size: .96rem;
+  margin-bottom: 2px;
+  box-shadow: 0 2px 8px rgba(160,160,219,0.05);
+}
+.fc .fc-daygrid-event-dot {
+  background: #A0A0DB;
+  border: none;
+}
+.fc .fc-scrollgrid {
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+.fc .fc-daygrid-day-number {
+  color: #5c5277; font-size: 1.01em; font-weight:500;
+}
+body, .fc-bg-beige {
+  background: #F6F1E7 !important;
+}
+
+
