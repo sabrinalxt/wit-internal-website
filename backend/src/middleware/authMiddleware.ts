@@ -35,7 +35,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
 
     req.user = decoded as { userId: number | string; roles: string[] }; // Attach user info to request
     next();
-  } catch (err) {
+  } catch {
     return res.status(403).json({ error: "Invalid or expired token" });
   }
 }
