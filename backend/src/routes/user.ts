@@ -1,6 +1,5 @@
 import { Router } from "express";
 import prisma from "../prisma/client";
-import { serializeBigInt } from "../utils/serializeBigInt";
 import {
   getAllUsers,
   getUserById,
@@ -19,7 +18,7 @@ router.get("/", async (req, res) => {
     const users = await getAllUsers();
 
     console.log("Got all users: ", users);
-    res.json(serializeBigInt(users));
+    res.json(users);
   } catch (error: any) {
     console.error("Error in getAllUsers: ", error);
     res.status(500).json({ message: error.message });
@@ -31,14 +30,18 @@ router.get("/:id", async (req, res) => {
   console.log("GET /users/:id called");
 
   try {
-    const user_id = BigInt(req.params.id);
+    const user_id = Number(req.params.id);
+    // TODO(validation-error-handler): replace with real request validation
+    if (isNaN(user_id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
     const user = await getUserById(user_id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     console.log("Got user: ", user);
-    res.json(serializeBigInt(user));
+    res.json(user);
   } catch (error: any) {
     console.error("Error in getUserById:", error);
     res.status(500).json({ message: error.message });
@@ -64,7 +67,7 @@ router.post("/", async (req, res) => {
     });
 
     console.log("Created user: ", newUser);
-    res.status(201).json(serializeBigInt(newUser));
+    res.status(201).json(newUser);
   } catch (error: any) {
     console.error("Error in createUser: ", error);
     res.status(500).json({ message: error.message });
@@ -76,7 +79,11 @@ router.put("/:id", async (req, res) => {
   console.log("PUT /users/:id called");
 
   try {
-    const user_id = BigInt(req.params.id);
+    const user_id = Number(req.params.id);
+    // TODO(validation-error-handler): replace with real request validation
+    if (isNaN(user_id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
 
     // Check if the user exists
     const existingUser = await prisma.user.findUnique({ where: { user_id } });
@@ -94,7 +101,7 @@ router.put("/:id", async (req, res) => {
     });
 
     console.log("Updated user:", updatedUser);
-    res.status(200).json(serializeBigInt(updatedUser));
+    res.status(200).json(updatedUser);
   } catch (error: any) {
     console.error("Error in updateUser:", error);
     res.status(500).json({ message: error.message });
@@ -106,11 +113,15 @@ router.delete("/:id", async (req, res) => {
   console.log("DELETE /users/:id called");
 
   try {
-    const user_id = BigInt(req.params.id);
+    const user_id = Number(req.params.id);
+    // TODO(validation-error-handler): replace with real request validation
+    if (isNaN(user_id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
     const deletedUser = await deleteUser(user_id);
 
     console.log("Deleted user: ", deletedUser);
-    res.status(200).json(serializeBigInt(deletedUser));
+    res.status(200).json(deletedUser);
   } catch (error: any) {
     console.error("Error in deleteUser: ", error);
     res.status(500).json({ message: error.message });

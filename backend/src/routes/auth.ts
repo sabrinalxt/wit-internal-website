@@ -1,6 +1,5 @@
   import express, { Request, Response } from "express";
   import { login } from "../services/authService";
-  import { serializeBigInt } from "../utils/serializeBigInt";
 
   const router = express.Router();
 
@@ -15,7 +14,7 @@
       }
       // Call login service
       const result = await login(email, password);
-      res.json(serializeBigInt(result));
+      res.json(result);
     } catch (err: any) {
       res.status(401).json({ error: err.message });
     }

@@ -10,18 +10,12 @@ import {
 
 const router = Router();
 
-function serializeBigInt(obj: any) {
-  return JSON.parse(
-    JSON.stringify(obj, (_, v) => (typeof v === "bigint" ? v.toString() : v))
-  );
-}
-
 // GET /proposals
 router.get("/", async (req, res) => {
     console.log("GET /proposals called");
     try {
         const proposals = await getAllProposals(); 
-        res.json(serializeBigInt(proposals));
+        res.json(proposals);
     } catch (error: any) {
     console.error("Error in getAllProposals:", error);
     res.status(500).json({ message: error.message });
@@ -33,14 +27,18 @@ router.get("/:id", async (req, res) => {
     console.log("GET /proposals/:id called");
 
     try {
-        const proposal_id = BigInt(req.params.id); // Convert from string to bigint
+        const proposal_id = Number(req.params.id);
+        // TODO(validation-error-handler): replace with real request validation
+        if (isNaN(proposal_id)) {
+          return res.status(400).json({ message: "Invalid id" });
+        }
         const proposal = await getProposalById(proposal_id); 
 
         if (!proposal) {
             return res.status(404).json({ message: "Proposal not found" });
         }
 
-        res.status(200).json(serializeBigInt(proposal));
+        res.status(200).json(proposal);
     } catch (error: any) {
         console.error("Error in getProposalById: ", error);
         res.status(500).json({ message: error.message });
@@ -62,7 +60,7 @@ router.post("/", async (req, res) => {
         } = req.body;
 
         const requestor = await prisma.user.findUnique({
-          where: { user_id: BigInt(requestor_id) },
+          where: { user_id: Number(requestor_id) },
         });
 
         if (!requestor) {
@@ -73,7 +71,7 @@ router.post("/", async (req, res) => {
         
         if (approver_id) {
             const approver = await prisma.user.findUnique({
-              where: { user_id: BigInt(approver_id) },
+              where: { user_id: Number(approver_id) },
             });
 
             if (!approver) {
@@ -90,12 +88,12 @@ router.post("/", async (req, res) => {
             proposal_status,
             date_submitted: date_submitted ? new Date(date_submitted) : new Date(), 
             date_reviewed: date_reviewed ? new Date(date_reviewed) : new Date(), 
-            requestor_id: BigInt(requestor_id),
-            approver_id: approver_id ? BigInt(approver_id) : null,
+            requestor_id: Number(requestor_id),
+            approver_id: approver_id ? Number(approver_id) : null,
         });
 
         console.log("Created proposal: ", newProposal);
-        res.status(201).json(serializeBigInt(newProposal));
+        res.status(201).json(newProposal);
     } catch (error: any) {
         console.error("Error in createProposal:", error);
         res.status(500).json({ message: error.message });
@@ -106,7 +104,11 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
     console.log("PUT /proposals/:id called");
     try {
-        const proposal_id = BigInt(req.params.id);
+        const proposal_id = Number(req.params.id);
+        // TODO(validation-error-handler): replace with real request validation
+        if (isNaN(proposal_id)) {
+          return res.status(400).json({ message: "Invalid id" });
+        }
 
         const existingProposal = await prisma.proposal.findUnique({
           where: { proposal_id },
@@ -137,7 +139,7 @@ router.put("/:id", async (req, res) => {
         });
 
         console.log("Updated proposal: ", updatedProposal);
-        res.status(200).json(serializeBigInt(updatedProposal));
+        res.status(200).json(updatedProposal);
     } catch (error: any) {
         console.error("Error in updateProposal: ", error);
         res.status(500).json({ message: error.message });
@@ -149,7 +151,11 @@ router.delete("/:id", async (req, res) => {
     console.log("DELETE /proposals/:id called");
 
     try {
-        const proposal_id = BigInt(req.params.id);
+        const proposal_id = Number(req.params.id);
+        // TODO(validation-error-handler): replace with real request validation
+        if (isNaN(proposal_id)) {
+          return res.status(400).json({ message: "Invalid id" });
+        }
         const deletedProposal = await deleteProposal(proposal_id);
 
         if (!deletedProposal) {
@@ -157,7 +163,7 @@ router.delete("/:id", async (req, res) => {
         }
 
         console.log("Deleted Proposal: ", deletedProposal);
-        res.status(200).json(serializeBigInt(deletedProposal));
+        res.status(200).json(deletedProposal);
     } catch (error: any) {
         console.error("Error in deleteProposal: ", error);
         res.status(500).json({ message: error.message });

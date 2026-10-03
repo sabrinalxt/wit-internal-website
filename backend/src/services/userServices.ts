@@ -7,7 +7,7 @@ export const getAllUsers = async () => {
 };
 
 // Get user by ID
-export const getUserById = async (user_id: bigint) => {
+export const getUserById = async (user_id: number) => {
   return prisma.user.findUnique({
     where: { user_id },
   });
@@ -39,7 +39,7 @@ export const createUser = async (data: {
 
 // Update user (rehash only if password is provided)
 export const updateUser = async (
-  user_id: bigint,
+  user_id: number,
   data: {
     first_name?: string;
     last_name?: string;
@@ -65,7 +65,7 @@ export const updateUser = async (
 };
 
 // Delete user
-export const deleteUser = async (user_id: bigint) => {
+export const deleteUser = async (user_id: number) => {
   return prisma.user.delete({
     where: { user_id },
   });
