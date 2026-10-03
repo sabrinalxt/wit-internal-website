@@ -1,31 +1,31 @@
-import { useEffect, useState } from 'react'
-import { getUsers } from '../api/client'
-import type { User } from '../types'
+import { useEffect, useState } from "react";
+import { getUsers } from "../api/client";
+import type { User } from "../types";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let active = true
+    let active = true;
     getUsers()
       .then((data) => {
-        if (active) setUsers(data)
+        if (active) setUsers(data);
       })
       .catch((e) => {
-        if (active) setError(e instanceof Error ? e.message : String(e))
+        if (active) setError(e instanceof Error ? e.message : String(e));
       })
-      .finally(() => active && setLoading(false))
+      .finally(() => active && setLoading(false));
     return () => {
-      active = false
-    }
-  }, [])
+      active = false;
+    };
+  }, []);
 
-  if (loading) return <div>Loading users...</div>
-  if (error) return <div>Failed to load users: {error}</div>
+  if (loading) return <div>Loading users...</div>;
+  if (error) return <div>Failed to load users: {error}</div>;
 
-  if (users.length === 0) return <div>No users found.</div>
+  if (users.length === 0) return <div>No users found.</div>;
 
   return (
     <div>
@@ -38,7 +38,5 @@ export default function UsersPage() {
         ))}
       </ul>
     </div>
-  )
+  );
 }
-
-

@@ -34,9 +34,24 @@ const USERS: {
   roles: RoleName[];
 }[] = [
   { email: "admin@wit.local", first_name: "Alex", last_name: "Admin", roles: [RoleName.Admin] },
-  { email: "requestor@wit.local", first_name: "Riley", last_name: "Requestor", roles: [RoleName.Requestor] },
-  { email: "pillarlead@wit.local", first_name: "Parker", last_name: "PillarLead", roles: [RoleName.PillarLead] },
-  { email: "approver@wit.local", first_name: "Avery", last_name: "Approver", roles: [RoleName.Approver] },
+  {
+    email: "requestor@wit.local",
+    first_name: "Riley",
+    last_name: "Requestor",
+    roles: [RoleName.Requestor],
+  },
+  {
+    email: "pillarlead@wit.local",
+    first_name: "Parker",
+    last_name: "PillarLead",
+    roles: [RoleName.PillarLead],
+  },
+  {
+    email: "approver@wit.local",
+    first_name: "Avery",
+    last_name: "Approver",
+    roles: [RoleName.Approver],
+  },
   { email: "viewer@wit.local", first_name: "Val", last_name: "Viewer", roles: [RoleName.Viewer] },
   // One user holding several roles
   {

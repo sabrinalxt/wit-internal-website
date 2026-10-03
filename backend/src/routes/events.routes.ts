@@ -2,12 +2,7 @@ import { Router } from "express";
 import prisma from "../prisma/client";
 import { authenticateToken } from "../middleware/authMiddleware";
 import { authorizeRoles } from "../middleware/authRoles";
-import {
-  getEventById,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-} from "../services/events.service";
+import { getEventById, createEvent, updateEvent, deleteEvent } from "../services/events.service";
 
 const router = Router();
 
@@ -77,13 +72,11 @@ router.post("/", authenticateToken, authorizeRoles(["Admin"]), async (req, res) 
 
     console.log("Created Event:", newEvent);
     res.status(201).json(newEvent);
-
   } catch (error: any) {
     console.error("Error in createEvent:", error);
     res.status(500).json({ message: error.message });
   }
 });
-
 
 // PUT /event/:id
 router.put("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
@@ -99,7 +92,7 @@ router.put("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res
     const existingEvent = await prisma.event.findUnique({
       where: { event_id },
     });
-    
+
     if (!existingEvent) {
       return res.status(404).json({ message: "Event not found" });
     }

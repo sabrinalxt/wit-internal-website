@@ -55,7 +55,7 @@ export const updateUser = async (
     last_name?: string;
     email?: string;
     password?: string;
-  }
+  },
 ) => {
   const updateData: any = {
     first_name: data.first_name,

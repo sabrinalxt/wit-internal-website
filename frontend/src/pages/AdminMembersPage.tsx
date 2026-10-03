@@ -4,5 +4,5 @@ export default function AdminMembersPage() {
       <h2 className="text-2xl font-bold mb-2">Admin: Members</h2>
       <p className="text-slate-500">TODO(admin-templates-pages): not built yet.</p>
     </div>
-  )
+  );
 }

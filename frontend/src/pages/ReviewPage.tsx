@@ -4,5 +4,5 @@ export default function ReviewPage() {
       <h2 className="text-2xl font-bold mb-2">Review queue</h2>
       <p className="text-slate-500">TODO(reviewer-view): not built yet.</p>
     </div>
-  )
+  );
 }

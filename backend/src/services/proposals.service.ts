@@ -17,7 +17,7 @@ export const getProposalById = async (proposal_id: number) => {
 // TODO(proposals-api): an FA must link to an APPROVED IPA via parent_proposal_id (app-level rule)
 export const createProposal = async (data: {
   proposal_name: string;
-  proposal_type: 'IPA' | 'FA';
+  proposal_type: "IPA" | "FA";
   proposal_status?: ProposalStatus;
   date_submitted?: Date | null;
   date_reviewed?: Date | null;
@@ -42,13 +42,13 @@ export const updateProposal = async (
   proposal_id: number,
   data: {
     proposal_name?: string;
-    proposal_type?: 'IPA' | 'FA';
+    proposal_type?: "IPA" | "FA";
     proposal_status?: ProposalStatus;
     date_submitted?: Date | null;
     date_reviewed?: Date | null;
     requestor_id?: number;
     approver_id?: number | null;
-  }
+  },
 ) => {
   return prisma.proposal.update({
     where: { proposal_id },

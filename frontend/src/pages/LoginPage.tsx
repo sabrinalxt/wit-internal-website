@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     // TODO(login-signup-wiring): hook up to the real auth endpoint
     // For now, just log the values
-    console.log({ email, password })
+    console.log({ email, password });
   }
 
   return (
@@ -22,7 +22,9 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={onSubmit} style={styles.form}>
-          <label style={styles.label} htmlFor="email">Email</label>
+          <label style={styles.label} htmlFor="email">
+            Email
+          </label>
           <input
             id="email"
             type="email"
@@ -34,11 +36,13 @@ export default function LoginPage() {
             autoComplete="email"
           />
 
-          <label style={styles.label} htmlFor="password">Password</label>
+          <label style={styles.label} htmlFor="password">
+            Password
+          </label>
           <div style={styles.passwordRow}>
             <input
               id="password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -49,142 +53,149 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? "Hide password" : "Show password"}
               style={styles.eyeButton}
             >
-              {showPassword ? 'Hide' : 'Show'}
+              {showPassword ? "Hide" : "Show"}
             </button>
           </div>
 
           <div style={styles.rowBetween}>
-            <a href="#" style={styles.link}>Forgot password?</a>
+            <a href="#" style={styles.link}>
+              Forgot password?
+            </a>
           </div>
 
-          <button type="submit" className="w-full rounded-lg bg-purple-accent text-white font-semibold py-3 mt-2 hover:brightness-105 transition">Login</button>
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-purple-accent text-white font-semibold py-3 mt-2 hover:brightness-105 transition"
+          >
+            Login
+          </button>
         </form>
 
-        <div style={styles.footer}> 
+        <div style={styles.footer}>
           <span>Don’t have an account?</span>
-          <Link to="/signup" style={{ ...styles.link, marginLeft: 6 }}>Create account</Link>
+          <Link to="/signup" style={{ ...styles.link, marginLeft: 6 }}>
+            Create account
+          </Link>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 const styles: Record<string, React.CSSProperties> = {
   wrapper: {
-    minHeight: '100vh',
-    width: '100vw',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    minHeight: "100vh",
+    width: "100vw",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 24,
     background:
-      'radial-gradient(1200px 600px at -10% -10%, rgba(186, 160, 255, 0.35), transparent),\
+      "radial-gradient(1200px 600px at -10% -10%, rgba(186, 160, 255, 0.35), transparent),\
        radial-gradient(800px 500px at 110% 10%, rgba(153, 233, 255, 0.35), transparent),\
-       linear-gradient(180deg, #efe6ff 0%, #e6dbff 100%)',
-    color: '#171325',
-    boxSizing: 'border-box'
+       linear-gradient(180deg, #efe6ff 0%, #e6dbff 100%)",
+    color: "#171325",
+    boxSizing: "border-box",
   },
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 560,
-    background: 'rgba(255, 255, 255, 0.65)',
-    border: '1px solid rgba(10, 0, 40, 0.06)',
-    boxShadow: '0 20px 50px rgba(59, 35, 120, 0.15)',
-    backdropFilter: 'blur(10px)',
+    background: "rgba(255, 255, 255, 0.65)",
+    border: "1px solid rgba(10, 0, 40, 0.06)",
+    boxShadow: "0 20px 50px rgba(59, 35, 120, 0.15)",
+    backdropFilter: "blur(10px)",
     borderRadius: 16,
     padding: 32,
-    marginTop: -40
+    marginTop: -40,
   },
   header: {
-    textAlign: 'center' as const,
-    marginBottom: 18
+    textAlign: "center" as const,
+    marginBottom: 18,
   },
   logo: {
     width: 72,
     height: 72,
-    objectFit: 'contain' as const,
-    display: 'block',
-    margin: '0 auto 10px auto'
+    objectFit: "contain" as const,
+    display: "block",
+    margin: "0 auto 10px auto",
   },
   title: {
-    margin: '0 0 6px 0',
+    margin: "0 0 6px 0",
     fontSize: 28,
-    letterSpacing: 0.2
+    letterSpacing: 0.2,
   },
   subtitle: {
     margin: 0,
-    color: '#5c5b73'
+    color: "#5c5b73",
   },
   form: {
     marginTop: 16,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 10
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 10,
   },
   label: {
     fontSize: 13,
-    color: '#4b4763'
+    color: "#4b4763",
   },
   input: {
-    width: '100%',
-    background: '#faf8ff',
-    color: '#171325',
-    border: '1px solid #d7cff7',
+    width: "100%",
+    background: "#faf8ff",
+    color: "#171325",
+    border: "1px solid #d7cff7",
     borderRadius: 12,
-    padding: '14px 16px',
-    outline: 'none',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)',
-    boxSizing: 'border-box'
+    padding: "14px 16px",
+    outline: "none",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+    boxSizing: "border-box",
   },
   passwordRow: {
-    position: 'relative' as const,
-    width: '100%'
+    position: "relative" as const,
+    width: "100%",
   },
   eyeButton: {
-    position: 'absolute' as const,
+    position: "absolute" as const,
     right: 10,
-    top: '50%',
-    transform: 'translateY(-50%)',
+    top: "50%",
+    transform: "translateY(-50%)",
     height: 28,
-    padding: '0 8px',
-    background: 'transparent',
-    color: '#6f6b8a',
-    border: 'none',
+    padding: "0 8px",
+    background: "transparent",
+    color: "#6f6b8a",
+    border: "none",
     borderRadius: 6,
-    cursor: 'pointer'
+    cursor: "pointer",
   },
   rowBetween: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 2,
   },
   link: {
-    color: '#5a34ea',
-    textDecoration: 'none'
+    color: "#5a34ea",
+    textDecoration: "none",
   },
   primaryButton: {
     marginTop: 10,
-    width: '100%',
-    background: 'linear-gradient(90deg, #9b6dff 0%, #5ee2ff 100%)',
-    color: '#1a1340',
+    width: "100%",
+    background: "linear-gradient(90deg, #9b6dff 0%, #5ee2ff 100%)",
+    color: "#1a1340",
     fontWeight: 700,
-    border: 'none',
+    border: "none",
     borderRadius: 12,
-    padding: '12px 14px',
-    cursor: 'pointer'
+    padding: "12px 14px",
+    cursor: "pointer",
   },
   footer: {
     marginTop: 16,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 4,
-    color: '#5c5b73'
-  }
-}
-
-
+    color: "#5c5b73",
+  },
+};

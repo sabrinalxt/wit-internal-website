@@ -1,11 +1,11 @@
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
 
 const mockEvents = [
-  { title: 'Welcome Week', start: '2025-06-01', color: '#A0A0DB' },
-  { title: 'Tech Exchange', start: '2025-06-06', color: '#F4B400' },
-  { title: 'Mentor Meeting', start: '2025-06-15', color: '#87D37C' }
-]
+  { title: "Welcome Week", start: "2025-06-01", color: "#A0A0DB" },
+  { title: "Tech Exchange", start: "2025-06-06", color: "#F4B400" },
+  { title: "Mentor Meeting", start: "2025-06-15", color: "#87D37C" },
+];
 
 export default function CalendarPage() {
   return (
@@ -15,9 +15,9 @@ export default function CalendarPage() {
           plugins={[dayGridPlugin]}
           initialView="dayGridMonth"
           headerToolbar={{
-            left: 'prev today next',
-            center: 'title',
-            right: ''
+            left: "prev today next",
+            center: "title",
+            right: "",
           }}
           events={mockEvents}
           height="auto"

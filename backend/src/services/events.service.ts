@@ -44,7 +44,7 @@ export const updateEvent = async (
     pillar?: string;
     proposal_id?: number | null;
     admin_id?: number;
-  }
+  },
 ) => {
   // TODO(clash-detection): re-check overlaps when start_at/end_at change
   return prisma.event.update({
