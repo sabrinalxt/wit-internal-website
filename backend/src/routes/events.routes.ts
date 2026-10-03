@@ -48,7 +48,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // CREATE /event
-router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) => {
+router.post("/", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("CREATE /events called");
 
   try {
@@ -86,7 +86,7 @@ router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) 
 
 
 // PUT /event/:id
-router.put("/:id", async (req, res) => {
+router.put("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("PUT /events called");
   try {
     const event_id = Number(req.params.id);
@@ -124,7 +124,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE event
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("DELETE /events/:id called");
 
   try {

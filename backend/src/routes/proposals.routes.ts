@@ -1,5 +1,7 @@
 import { Router } from "express";
 import prisma from "../prisma/client";
+import { authenticateToken } from "../middleware/authMiddleware";
+import { authorizeRoles } from "../middleware/authRoles";
 import { NotImplemented } from "../middleware/errorHandler";
 import {
   getAllProposals,
@@ -51,7 +53,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /proposals
-router.post("/", async (req, res) => {
+router.post("/", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
     console.log("POST /proposals called");
     try {
         const {
@@ -106,7 +108,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /proposals/:id
-router.put("/:id", async (req, res) => {
+router.put("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
     console.log("PUT /proposals/:id called");
     try {
         const proposal_id = Number(req.params.id);
@@ -152,7 +154,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /proposals/:id
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
     console.log("DELETE /proposals/:id called");
 
     try {
