@@ -46,8 +46,6 @@ model User {
   status_changes           ProposalStatusHistory[]
   templates                Template[]
   events                   Event[]
-  accesses                 Access[]
-  views                    View[]
 }
 
 model Role {
@@ -121,9 +119,7 @@ model Template {
   content_link  String? @db.VarChar(512)
   admin_id      Int
 
-  admin    User     @relation(fields: [admin_id], references: [user_id])
-  accesses Access[]
-  views    View[]
+  admin User @relation(fields: [admin_id], references: [user_id])
 
   @@index([admin_id])
 }
@@ -142,7 +138,6 @@ model Event {
   proposal       Proposal?      @relation(fields: [proposal_id], references: [proposal_id], onDelete: SetNull)
   admin          User           @relation(fields: [admin_id], references: [user_id])
   event_contacts EventContact[]
-  views          View[]
 
   @@index([proposal_id])
   @@index([admin_id])
@@ -170,31 +165,4 @@ model EventContact {
 
   @@unique([event_id, contact_id])
   @@index([contact_id])
-}
-
-model Access {
-  id          Int @id @default(autoincrement())
-  user_id     Int
-  template_id Int
-
-  user     User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  template Template @relation(fields: [template_id], references: [template_id], onDelete: Cascade)
-
-  @@unique([user_id, template_id])
-  @@index([template_id])
-}
-
-model View {
-  id          Int  @id @default(autoincrement())
-  user_id     Int
-  event_id    Int
-  template_id Int?
-
-  user     User      @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  event    Event     @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
-  template Template? @relation(fields: [template_id], references: [template_id], onDelete: Cascade)
-
-  @@unique([user_id, event_id, template_id])
-  @@index([event_id])
-  @@index([template_id])
 }

@@ -52,7 +52,7 @@ router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) 
   console.log("CREATE /events called");
 
   try {
-    const { event_name, event_date, pillar, proposal_id, admin_id } = req.body;
+    const { event_name, start_at, end_at, pillar, proposal_id, admin_id } = req.body;
 
     // Check if proposal exists
     const proposal = await prisma.proposal.findUnique({
@@ -68,7 +68,8 @@ router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) 
     // Create event
     const newEvent = await createEvent({
       event_name,
-      event_date: new Date(event_date),
+      start_at: new Date(start_at),
+      end_at: end_at ? new Date(end_at) : null,
       pillar,
       proposal_id: Number(proposal_id),
       admin_id: Number(admin_id),
@@ -103,11 +104,12 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    const { event_name, event_date, pillar, proposal_id, admin_id } = req.body;
+    const { event_name, start_at, end_at, pillar, proposal_id, admin_id } = req.body;
 
     const updatedEvent = await updateEvent(event_id, {
       event_name,
-      event_date,
+      start_at,
+      end_at,
       pillar,
       proposal_id,
       admin_id,
