@@ -1,3 +1,4 @@
+import { ProposalStatus } from "@prisma/client";
 import prisma from "../prisma/client";
 
 // Get all proposals
@@ -13,12 +14,13 @@ export const getProposalById = async (proposal_id: number) => {
 };
 
 // Create new proposal
+// TODO(proposals-api): an FA must link to an APPROVED IPA via parent_proposal_id (app-level rule)
 export const createProposal = async (data: {
   proposal_name: string;
   proposal_type: 'IPA' | 'FA';
-  proposal_status: string;
-  date_submitted?: Date;
-  date_reviewed?: Date;
+  proposal_status?: ProposalStatus;
+  date_submitted?: Date | null;
+  date_reviewed?: Date | null;
   requestor_id: number;
   approver_id?: number | null; // approver_id is nullable in the DB
 }) => {
@@ -41,9 +43,9 @@ export const updateProposal = async (
   data: {
     proposal_name?: string;
     proposal_type?: 'IPA' | 'FA';
-    proposal_status?: string;
-    date_submitted?: Date;
-    date_reviewed?: Date;
+    proposal_status?: ProposalStatus;
+    date_submitted?: Date | null;
+    date_reviewed?: Date | null;
     requestor_id?: number;
     approver_id?: number | null;
   }
