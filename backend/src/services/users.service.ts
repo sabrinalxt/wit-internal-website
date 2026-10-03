@@ -1,15 +1,25 @@
 import prisma from "../prisma/client";
 import bcrypt from "bcrypt";
 
+// Never return password_hash in a response
+const publicUserSelect = {
+  user_id: true,
+  first_name: true,
+  last_name: true,
+  email: true,
+  created_at: true,
+} as const;
+
 // Get all users
 export const getAllUsers = async () => {
-  return prisma.user.findMany();
+  return prisma.user.findMany({ select: publicUserSelect });
 };
 
 // Get user by ID
 export const getUserById = async (user_id: number) => {
   return prisma.user.findUnique({
     where: { user_id },
+    select: publicUserSelect,
   });
 };
 
@@ -45,7 +55,7 @@ export const updateUser = async (
     last_name?: string;
     email?: string;
     password?: string;
-  }
+  },
 ) => {
   const updateData: any = {
     first_name: data.first_name,
@@ -61,6 +71,7 @@ export const updateUser = async (
   return prisma.user.update({
     where: { user_id },
     data: updateData,
+    select: publicUserSelect,
   });
 };
 
@@ -68,5 +79,6 @@ export const updateUser = async (
 export const deleteUser = async (user_id: number) => {
   return prisma.user.delete({
     where: { user_id },
+    select: publicUserSelect,
   });
 };

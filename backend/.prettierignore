@@ -1,0 +1,4 @@
+dist
+generated
+prisma/migrations
+package-lock.json

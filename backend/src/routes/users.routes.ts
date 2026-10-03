@@ -1,12 +1,14 @@
 import { Router } from "express";
 import prisma from "../prisma/client";
+import { authenticateToken } from "../middleware/authMiddleware";
+import { authorizeRoles } from "../middleware/authRoles";
 import {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
-} from "../services/userServices";
+} from "../services/users.service";
 
 const router = Router();
 
@@ -49,7 +51,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /users
-router.post("/", async (req, res) => {
+router.post("/", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("POST /users called");
 
   try {
@@ -75,7 +77,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /users/:id
-router.put("/:id", async (req, res) => {
+router.put("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("PUT /users/:id called");
 
   try {
@@ -109,7 +111,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /users
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("DELETE /users/:id called");
 
   try {

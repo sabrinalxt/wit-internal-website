@@ -24,3 +24,6 @@ coverage/
 # Editor files
 .vscode/*
 .idea/
+
+# Generated Prisma client output
+backend/generated/
