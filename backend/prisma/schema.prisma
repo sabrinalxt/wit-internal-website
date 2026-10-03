@@ -10,6 +10,7 @@ datasource db {
 // Enums
 enum RoleName {
   Requestor
+  PillarLead
   Approver
   Admin
   Viewer
