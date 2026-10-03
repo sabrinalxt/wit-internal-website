@@ -10,6 +10,7 @@ datasource db {
 // Enums
 enum RoleName {
   Requestor
+  PillarLead
   Approver
   Admin
   Viewer
@@ -22,7 +23,7 @@ enum ProposalType {
 
 // Models
 model User {
-  user_id   BigInt   @id @default(autoincrement())
+  user_id   Int   @id @default(autoincrement())
   first_name String  @db.VarChar(100)
   last_name  String  @db.VarChar(100)
   email      String  @unique @db.VarChar(255)
@@ -38,16 +39,16 @@ model User {
 }
 
 model Role {
-  role_id   BigInt   @id @default(autoincrement())
+  role_id   Int   @id @default(autoincrement())
   role_name RoleName @unique
 
   user_roles UserRole[]
 }
 
 model UserRole {
-  id      BigInt @id @default(autoincrement())
-  user_id BigInt
-  role_id BigInt
+  id      Int @id @default(autoincrement())
+  user_id Int
+  role_id Int
 
   user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   role Role @relation(fields: [role_id], references: [role_id], onDelete: Cascade)
@@ -56,14 +57,14 @@ model UserRole {
 }
 
 model Proposal {
-  proposal_id   BigInt      @id @default(autoincrement())
+  proposal_id   Int      @id @default(autoincrement())
   proposal_name String      @db.VarChar(255)
   proposal_type ProposalType
   proposal_status String    @db.VarChar(50)
   date_submitted DateTime   @default(now()) @db.Timestamp(0)
   date_reviewed DateTime    @default(now()) @db.Timestamp(0)
-  requestor_id BigInt
-  approver_id BigInt?
+  requestor_id Int
+  approver_id Int?
 
   requestor User @relation("Requestor", fields: [requestor_id], references: [user_id])
   approver  User? @relation("Approver", fields: [approver_id], references: [user_id])
@@ -74,11 +75,11 @@ model Proposal {
 }
 
 model Template {
-  template_id   BigInt   @id @default(autoincrement())
+  template_id   Int   @id @default(autoincrement())
   template_name String   @db.VarChar(255)
   template_type String?  @db.VarChar(50)
   content_link  String?  @db.VarChar(512)
-  admin_id      BigInt
+  admin_id      Int
 
   admin User @relation(fields: [admin_id], references: [user_id])
   accesses Access[]
@@ -88,12 +89,12 @@ model Template {
 }
 
 model Event {
-  event_id    BigInt    @id @default(autoincrement())
+  event_id    Int    @id @default(autoincrement())
   event_name  String    @db.VarChar(255)
   event_date  DateTime? @db.Date
   pillar      String?   @db.VarChar(100)
-  proposal_id BigInt
-  admin_id    BigInt
+  proposal_id Int
+  admin_id    Int
 
   proposal Proposal @relation(fields: [proposal_id], references: [proposal_id])
   admin    User     @relation(fields: [admin_id], references: [user_id])
@@ -105,7 +106,7 @@ model Event {
 }
 
 model NetworkContact {
-  network_contact_id BigInt @id @default(autoincrement())
+  network_contact_id Int @id @default(autoincrement())
   network_contact_name String @db.VarChar(255)
   network_contact_email String? @unique @db.VarChar(255)
   network_contact_association String? @db.VarChar(255)
@@ -115,9 +116,9 @@ model NetworkContact {
 }
 
 model EventContact {
-  id BigInt @id @default(autoincrement())
-  event_id BigInt
-  contact_id BigInt
+  id Int @id @default(autoincrement())
+  event_id Int
+  contact_id Int
   event_contact_association String? @db.VarChar(255)
 
   event Event @relation(fields: [event_id], references: [event_id], onDelete: Cascade)
@@ -128,9 +129,9 @@ model EventContact {
 }
 
 model Access {
-  id BigInt @id @default(autoincrement())
-  user_id BigInt
-  template_id BigInt
+  id Int @id @default(autoincrement())
+  user_id Int
+  template_id Int
 
   user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   template Template @relation(fields: [template_id], references: [template_id], onDelete: Cascade)
@@ -140,10 +141,10 @@ model Access {
 }
 
 model View {
-  id BigInt @id @default(autoincrement())
-  user_id BigInt
-  event_id BigInt
-  template_id BigInt?
+  id Int @id @default(autoincrement())
+  user_id Int
+  event_id Int
+  template_id Int?
 
   user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   event Event @relation(fields: [event_id], references: [event_id], onDelete: Cascade)

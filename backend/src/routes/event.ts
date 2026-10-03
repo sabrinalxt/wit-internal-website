@@ -1,6 +1,5 @@
 import { Router } from "express";
 import prisma from "../prisma/client";
-import { serializeBigInt } from "../utils/serializeBigInt";
 import { authenticateToken } from "../middleware/authMiddleware";
 import { authorizeRoles } from "../middleware/authRoles";
 import {
@@ -18,7 +17,7 @@ router.get("/", async (req, res) => {
 
   try {
     const events = await prisma.event.findMany();
-    res.json(serializeBigInt(events));
+    res.json(events);
   } catch (error: any) {
     console.error("Error in getAllEvents: ", error);
     res.status(500).json({ message: error.message });
@@ -30,7 +29,11 @@ router.get("/:id", async (req, res) => {
   console.log("GET /events/:id called");
 
   try {
-    const event_id = BigInt(req.params.id); // convert from string to bigint
+    const event_id = Number(req.params.id);
+    // TODO(validation-error-handler): replace with real request validation
+    if (isNaN(event_id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
     const event = await getEventById(event_id);
 
     if (!event) {
@@ -53,7 +56,7 @@ router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) 
 
     // Check if proposal exists
     const proposal = await prisma.proposal.findUnique({
-      where: { proposal_id: BigInt(proposal_id) },
+      where: { proposal_id: Number(proposal_id) },
     });
 
     if (!proposal) {
@@ -67,12 +70,12 @@ router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) 
       event_name,
       event_date: new Date(event_date),
       pillar,
-      proposal_id: BigInt(proposal_id),
-      admin_id: BigInt(admin_id),
+      proposal_id: Number(proposal_id),
+      admin_id: Number(admin_id),
     });
 
     console.log("Created Event:", newEvent);
-    res.status(201).json(serializeBigInt(newEvent));
+    res.status(201).json(newEvent);
 
   } catch (error: any) {
     console.error("Error in createEvent:", error);
@@ -85,7 +88,11 @@ router.post("/", authenticateToken, authorizeRoles(['Admin']), async (req, res) 
 router.put("/:id", async (req, res) => {
   console.log("PUT /events called");
   try {
-    const event_id = BigInt(req.params.id);
+    const event_id = Number(req.params.id);
+    // TODO(validation-error-handler): replace with real request validation
+    if (isNaN(event_id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
 
     // Check if the event exists
     const existingEvent = await prisma.event.findUnique({
@@ -107,7 +114,7 @@ router.put("/:id", async (req, res) => {
     });
 
     console.log("Updated event: ", updatedEvent);
-    res.status(200).json(serializeBigInt(updatedEvent));
+    res.status(200).json(updatedEvent);
   } catch (error: any) {
     console.error("Error in updateEvent: ", error);
     res.status(500).json({ message: error.message });
@@ -119,11 +126,15 @@ router.delete("/:id", async (req, res) => {
   console.log("DELETE /events/:id called");
 
   try {
-    const event_id = BigInt(req.params.id);
+    const event_id = Number(req.params.id);
+    // TODO(validation-error-handler): replace with real request validation
+    if (isNaN(event_id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
     const deletedEvent = await deleteEvent(event_id);
 
     console.log("Deleted Event: ", deletedEvent);
-    res.status(200).json(serializeBigInt(deletedEvent));
+    res.status(200).json(deletedEvent);
   } catch (error: any) {
     console.error("Error in deleteEvent: ", error);
     res.status(500).json({ message: error.message });

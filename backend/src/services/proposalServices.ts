@@ -6,7 +6,7 @@ export const getAllProposals = async () => {
 };
 
 // Get proposal by ID
-export const getProposalById = async (proposal_id: bigint) => {
+export const getProposalById = async (proposal_id: number) => {
   return prisma.proposal.findUnique({
     where: { proposal_id },
   });
@@ -19,8 +19,8 @@ export const createProposal = async (data: {
   proposal_status: string;
   date_submitted?: Date;
   date_reviewed?: Date;
-  requestor_id: bigint;
-  approver_id?: bigint | null; // approver_id is nullable in the DB
+  requestor_id: number;
+  approver_id?: number | null; // approver_id is nullable in the DB
 }) => {
   return prisma.proposal.create({
     data: {
@@ -37,15 +37,15 @@ export const createProposal = async (data: {
 
 // Update proposal
 export const updateProposal = async (
-  proposal_id: bigint,
+  proposal_id: number,
   data: {
     proposal_name?: string;
     proposal_type?: 'IPA' | 'FA';
     proposal_status?: string;
     date_submitted?: Date;
     date_reviewed?: Date;
-    requestor_id?: bigint;
-    approver_id?: bigint | null;
+    requestor_id?: number;
+    approver_id?: number | null;
   }
 ) => {
   return prisma.proposal.update({
@@ -55,7 +55,7 @@ export const updateProposal = async (
 };
 
 // Delete proposal
-export const deleteProposal = async (proposal_id: bigint) => {
+export const deleteProposal = async (proposal_id: number) => {
   return prisma.proposal.delete({
     where: { proposal_id },
   });

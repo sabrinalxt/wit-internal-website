@@ -6,7 +6,7 @@ export const getAllEvents = async () => {
 };
 
 // Get event by ID
-export const getEventById = async (event_id: bigint) => {
+export const getEventById = async (event_id: number) => {
   return prisma.event.findUnique({
     where: { event_id },
   });
@@ -17,8 +17,8 @@ export const createEvent = async (data: {
   event_name: string;
   event_date?: Date;
   pillar?: string;
-  proposal_id: bigint;
-  admin_id: bigint;
+  proposal_id: number;
+  admin_id: number;
 }) => {
   return prisma.event.create({
     data: {
@@ -33,13 +33,13 @@ export const createEvent = async (data: {
 
 // Update event
 export const updateEvent = async (
-  event_id: bigint,
+  event_id: number,
   data: {
     event_name?: string;
     event_date?: Date;
     pillar?: string;
-    proposal_id?: bigint;
-    admin_id?: bigint;
+    proposal_id?: number;
+    admin_id?: number;
   }
 ) => {
   return prisma.event.update({
@@ -49,7 +49,7 @@ export const updateEvent = async (
 };
 
 // Delete event
-export const deleteEvent = async (event_id: bigint) => {
+export const deleteEvent = async (event_id: number) => {
   return prisma.event.delete({
     where: { event_id },
   });
