@@ -1,5 +1,6 @@
 import { Router } from "express";
 import prisma from "../prisma/client";
+import { NotImplemented } from "../middleware/errorHandler";
 import {
   getAllProposals,
   getProposalById,
@@ -9,6 +10,10 @@ import {
 } from "../services/proposals.service"; 
 
 const router = Router();
+
+// TODO(proposals-api): remove this guard once the handlers below are reviewed and
+// the workflow transitions are implemented. Until then every /proposals call is a 501.
+router.use((req, res, next) => next(NotImplemented("proposals-api")));
 
 // GET /proposals
 router.get("/", async (req, res) => {
