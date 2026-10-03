@@ -4,7 +4,6 @@ import { serializeBigInt } from "../utils/serializeBigInt";
 import { authenticateToken } from "../middleware/authMiddleware";
 import { authorizeRoles } from "../middleware/authRoles";
 import {
-  getAllEvents,
   getEventById,
   createEvent,
   updateEvent,

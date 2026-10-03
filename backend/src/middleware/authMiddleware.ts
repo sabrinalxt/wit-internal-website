@@ -3,8 +3,6 @@ dotenv.config();
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 // Extend Express Request type to include user
 export interface AuthRequest extends Request {
   user?: {
@@ -22,19 +20,13 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: "No token provided" });
   }
 
-    if (!process.env.JWT_SECRET) {
+  if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined in .env");
   }
   const JWT_SECRET = process.env.JWT_SECRET;
 
   try {
-    // Old snippet
-    // const decodedToken = jwt.verify(token, JWT_SECRET) as {
-    //   userId: number | string;
-    //   roles: string[];
-    // };
-
-    // New, safe version
+    // Parse as unknown, then check the payload shape at runtime
     const decoded = jwt.verify(token, JWT_SECRET) as unknown;
 
     // Runtime check to ensure token has the expected shape

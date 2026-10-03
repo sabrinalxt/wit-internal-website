@@ -13,10 +13,6 @@ app.use("/auth", authRouter);
 app.use("/users", userRouter);
 app.use("/event", eventRouter);
 
-app.post("/test", (req, res) => {
-  res.send("Hello world");
-});
-
 app.get("/", (req, res) => {
   res.send("API is running!");
 });

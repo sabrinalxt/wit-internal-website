@@ -1,21 +1,26 @@
-# Node.js dependencies
+# Dependencies
 node_modules/
+
+# Environment files (keep the example)
+.env*
+!.env.example
 
 # Build output
 dist/
 build/
 
-# Environment files 
-.env
-.env.local
-.env.*.local
+# Test coverage
+coverage/
 
-# Prisma generated client (can be regenerated anytime)
-generated/
-prisma/generated/
+# Logs
+*.log
 
 # TypeScript cache
 *.tsbuildinfo
 
+# OS files
+.DS_Store
 
-/generated/prisma
+# Editor files
+.vscode/*
+.idea/
