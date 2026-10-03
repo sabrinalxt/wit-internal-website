@@ -15,6 +15,7 @@ export default function SignupPage() {
       alert('Passwords do not match')
       return
     }
+    // TODO(login-signup-wiring): call the signup endpoint (claim a pre-created account)
     console.log({ firstName, lastName, email, password })
   }
 

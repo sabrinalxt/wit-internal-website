@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -7,7 +8,7 @@ export default function LoginPage() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // TODO: hook up to real auth endpoint
+    // TODO(login-signup-wiring): hook up to the real auth endpoint
     // For now, just log the values
     console.log({ email, password })
   }
@@ -64,7 +65,7 @@ export default function LoginPage() {
 
         <div style={styles.footer}> 
           <span>Don’t have an account?</span>
-          <a href="/signup" style={{ ...styles.link, marginLeft: 6 }}>Create account</a>
+          <Link to="/signup" style={{ ...styles.link, marginLeft: 6 }}>Create account</Link>
         </div>
       </div>
     </div>

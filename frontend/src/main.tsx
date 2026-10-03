@@ -6,6 +6,11 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ProposalsPage from './pages/ProposalsPage'
 import CalendarPage from './pages/CalendarPage'
+import HomePage from './pages/HomePage'
+import ReviewPage from './pages/ReviewPage'
+import TemplatesPage from './pages/TemplatesPage'
+import AdminMembersPage from './pages/AdminMembersPage'
+import AdminRolesPage from './pages/AdminRolesPage'
 import './index.css'
 
 const router = createBrowserRouter([
@@ -13,10 +18,15 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <LoginPage /> }
-      ,{ path: 'signup', element: <SignupPage /> }
-      ,{ path: 'proposals', element: <ProposalsPage /> }
-      ,{ path: 'calendar', element: <CalendarPage /> }
+      { index: true, element: <HomePage /> },
+      { path: 'login', element: <LoginPage /> },
+      { path: 'signup', element: <SignupPage /> },
+      { path: 'proposals', element: <ProposalsPage /> },
+      { path: 'review', element: <ReviewPage /> },
+      { path: 'calendar', element: <CalendarPage /> },
+      { path: 'templates', element: <TemplatesPage /> },
+      { path: 'admin/members', element: <AdminMembersPage /> },
+      { path: 'admin/roles', element: <AdminRolesPage /> },
     ]
   }
 ])
