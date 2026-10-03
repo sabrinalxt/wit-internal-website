@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { AuthRequest } from "./authMiddleware";
 
 export function authorizeRoles(allowedRoles: string[]) {
