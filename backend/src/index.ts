@@ -1,11 +1,12 @@
-import * as dotenv from "dotenv";
-dotenv.config();
+import { env } from "./config/env";
 import express from "express";
-import userRouter from "./routes/user";
-import eventRouter from "./routes/event";
-import authRouter from "./routes/auth";
+import cors from "cors";
+import userRouter from "./routes/users.routes";
+import eventRouter from "./routes/events.routes";
+import authRouter from "./routes/auth.routes";
 
 const app = express();
+app.use(cors({ origin: env.CORS_ORIGIN }));
 app.use(express.json());
 
 // Routes
@@ -17,7 +18,6 @@ app.get("/", (req, res) => {
   res.send("API is running!");
 });
 
-const PORT = 4000;
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.listen(env.PORT, () => {
+  console.log(`Server running at http://localhost:${env.PORT}`);
 });

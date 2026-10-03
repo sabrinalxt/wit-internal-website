@@ -1,8 +1,7 @@
 import prisma from "../prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "secretKey";
+import { env } from "../config/env";
 
 export async function login(email: string, password: string) {
     // Find if user exists by email
@@ -31,7 +30,7 @@ export async function login(email: string, password: string) {
     const roles = user.user_roles.map(ur => ur.role.role_name);
 
     // JWT token
-    const token = jwt.sign({userId: user.user_id.toString(), roles: roles }, JWT_SECRET, {expiresIn: "10m"});
+    const token = jwt.sign({userId: user.user_id.toString(), roles: roles }, env.JWT_SECRET, {expiresIn: "10m"});
 
     return { 
         token, 

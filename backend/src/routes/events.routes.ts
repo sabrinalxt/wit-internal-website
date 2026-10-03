@@ -7,7 +7,7 @@ import {
   createEvent,
   updateEvent,
   deleteEvent,
-} from "../services/eventServices";
+} from "../services/events.service";
 
 const router = Router();
 

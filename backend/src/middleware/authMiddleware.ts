@@ -1,7 +1,6 @@
-import dotenv from "dotenv";
-dotenv.config();
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { env } from "../config/env";
 
 // Extend Express Request type to include user
 export interface AuthRequest extends Request {
@@ -20,14 +19,9 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: "No token provided" });
   }
 
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined in .env");
-  }
-  const JWT_SECRET = process.env.JWT_SECRET;
-
   try {
     // Parse as unknown, then check the payload shape at runtime
-    const decoded = jwt.verify(token, JWT_SECRET) as unknown;
+    const decoded = jwt.verify(token, env.JWT_SECRET) as unknown;
 
     // Runtime check to ensure token has the expected shape
     if (

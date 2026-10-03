@@ -6,7 +6,7 @@ import {
   createProposal,
   updateProposal,
   deleteProposal,
-} from "../services/proposalServices"; 
+} from "../services/proposals.service"; 
 
 const router = Router();
 
