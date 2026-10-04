@@ -22,11 +22,9 @@ git --version
 ## 2. Get the code and run it
 
 - [ ] Clone the repo and open it in your editor.
-- [ ] Create an empty MySQL database for yourself, for example `wit_dev`.
-- [ ] Follow **Local setup** in the [README](../README.md): backend first, then frontend.
+- [ ] Follow **Local setup** in the [README](../README.md): backend first, then frontend. Pick a database name such as `wit_dev`: `npm run db:migrate` creates it for you.
 - [ ] Open `http://localhost:4000/health` (should say `OK`) and `http://localhost:5173`.
-- [ ] Log in to the API with a seeded user (listed in the README). Login is not wired into the
-      frontend yet, so this is done against the API directly.
+- [ ] Log in to the API with the `curl` command in README step 5. Login is not wired into the frontend yet, so this is done against the API directly.
 
 If something fails, check the usual suspects: wrong Node version, `.env` missing or misspelled
 (`DATABASE_URL`, `JWT_SECRET`), MySQL not running, database not created.
