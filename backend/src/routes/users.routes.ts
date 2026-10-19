@@ -13,7 +13,7 @@ import {
 const router = Router();
 
 // GET /users
-router.get("/", async (req, res) => {
+router.get("/", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("GET /users called");
 
   try {
@@ -28,7 +28,7 @@ router.get("/", async (req, res) => {
 });
 
 // GET /user/:id
-router.get("/:id", async (req, res) => {
+router.get("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
   console.log("GET /users/:id called");
 
   try {
