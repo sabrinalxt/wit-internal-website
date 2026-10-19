@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { login } from "../api/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO(login-signup-wiring): hook up to the real auth endpoint
-    // For now, just log the values
-    console.log({ email, password });
+    try {
+      const result = await login(email, password);
+      console.log("Logged in:", result);
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
   }
 
   return (
