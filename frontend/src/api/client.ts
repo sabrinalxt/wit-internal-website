@@ -1,4 +1,4 @@
-import type { LoginResponse, AdminUser, RoleName } from "../types";
+import type { LoginResponse, AdminUser, RoleName, CalendarEvent } from "../types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
@@ -57,7 +57,6 @@ export async function signUp(email: string, password: string): Promise<LoginResp
 
 // Admin functionalities
 
-
 export async function getUsers(): Promise<AdminUser[]> {
   const res = await fetch(`${API_BASE}/users`, {
     headers: { Authorization: `Bearer ${getToken()}` },
@@ -109,6 +108,18 @@ export async function updateUserRoles(userId: number, roles: RoleName[]): Promis
 export async function deleteUser(userId: number): Promise<{ user_id: number; deleted: true }> {
   const res = await fetch(`${API_BASE}/users/${userId}`, {
     method: "DELETE",
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    throw new ApiError(res.status, errorBody?.error ?? `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+// Events
+
+export async function getEvents(): Promise<CalendarEvent[]> {
+  const res = await fetch(`${API_BASE}/events`, {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
   if (!res.ok) {

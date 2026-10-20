@@ -23,3 +23,13 @@ export type AdminUser = {
   roles: RoleName[];
   status: "pending" | "active";
 };
+// An event as GET /events returns it
+export type CalendarEvent = {
+  event_id: number;
+  event_name: string;
+  start_at: string;
+  end_at: string | null;
+  pillar: string | null;
+  proposal: { proposal_id: number; proposal_name: string; proposal_type: string } | null;
+  admin: { first_name: string; last_name: string };
+};

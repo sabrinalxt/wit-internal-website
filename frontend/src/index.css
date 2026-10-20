@@ -68,7 +68,22 @@ body {
     transform: scaleX(0);
   }
 }
+/* Calendar event popup fade-in */
+.popover-enter {
+  animation: popover-in 0.15s ease-out both;
+}
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
+  .popover-enter,
   .toast-enter,
   .toast-leave {
     animation-duration: 1ms;
@@ -133,6 +148,17 @@ body {
   font-size: 0.96rem;
   margin-bottom: 2px;
   box-shadow: 0 2px 8px rgba(160, 160, 219, 0.05);
+}
+/* Coloured strip on the left of each event (colour comes from the event's borderColor) */
+.fc .fc-daygrid-block-event {
+  border-left: 3px solid;
+  font-size: 0.85rem;
+  padding: 1px 4px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.fc .fc-daygrid-block-event:hover {
+  filter: brightness(0.96);
 }
 .fc .fc-daygrid-event-dot {
   background: #a0a0db;
