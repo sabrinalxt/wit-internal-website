@@ -52,7 +52,8 @@ export async function login(emailRaw: string, password: string) {
 }
 
 
-// Sign Up 
+// Sign Up (Gated) - only proceeds for pending users (added by admins to approved list)
+// So sets the password on an existing row instead of creating a new user.
 export async function signUp(emailRaw: string, password: string) {
   const email = emailRaw.trim().toLowerCase();
 
@@ -66,7 +67,7 @@ export async function signUp(emailRaw: string, password: string) {
 
   // Email is unapproved or already registered
   if (!user || user.password_hash !== null) {
-    throw new HttpError(403, "Sign up is not available for this email");
+    throw new HttpError(403, "Sign up is not available for this email, please check with admin.");
   }
 
   const password_hash = await bcrypt.hash(password, 12);

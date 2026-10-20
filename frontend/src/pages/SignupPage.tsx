@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ApiError, setToken, signUp } from "../api/client";
+import { ApiError, signUp } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -10,6 +11,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { signIn } = useAuth();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +31,9 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const result = await signUp(email, password);
-      setToken(result.token);
+
+      signIn(result);
+
       navigate("/");
     } catch (err) {
       if (err instanceof TypeError) {

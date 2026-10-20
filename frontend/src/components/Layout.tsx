@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
 import NavBar from "./NavBar";
-import ProtectedRoute from "./ProtectedRoute";
 
 type LayoutProps = {
   children: ReactNode;
@@ -87,7 +86,7 @@ export default function Layout({ children }: LayoutProps) {
       </header>
       <main style={{ paddingTop: 170 }}>
         <NavBar />
-        <ProtectedRoute>{children}</ProtectedRoute>
+        {children}
       </main>
     </div>
   );

@@ -25,7 +25,7 @@ export async function getHealth(): Promise<string> {
   return res.text();
 }
 
-// All Users
+// Auth
 
 // Login
 export async function login(email: string, password: string): Promise<LoginResponse> {
