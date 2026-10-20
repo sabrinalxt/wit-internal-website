@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { login } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { useToast } from "../components/ui/toast";
 
 export default function LoginPage() {
@@ -10,18 +11,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { showToast, clearToast, toastElement } = useToast();
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? "/";
+
+  const { signIn } = useAuth();
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     clearToast();
     try {
       const result = await login(email, password);
-      // TODO(auth-context-routes): hand result.token and result.user to the auth context
-      showToast({
-        type: "success",
-        title: "Signed in",
-        text: `Welcome back, ${result.user.first_name}!`,
-      });
+      signIn(result);
+      navigate(from, { replace: true });
     } catch (err) {
       // fetch throws a TypeError when the server can't be reached
       const text =

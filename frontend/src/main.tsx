@@ -11,6 +11,8 @@ import ReviewPage from "./pages/ReviewPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import AdminMembersPage from "./pages/AdminMembersPage";
 import AdminRolesPage from "./pages/AdminRolesPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 import "./index.css";
 
 const router = createBrowserRouter([
@@ -25,14 +27,30 @@ const router = createBrowserRouter([
       { path: "review", element: <ReviewPage /> },
       { path: "calendar", element: <CalendarPage /> },
       { path: "templates", element: <TemplatesPage /> },
-      { path: "admin/members", element: <AdminMembersPage /> },
-      { path: "admin/roles", element: <AdminRolesPage /> },
+      {
+        path: "admin/members",
+        element: (
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminMembersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/roles",
+        element: (
+          <ProtectedRoute roles={["Admin"]}>
+            <AdminRolesPage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </React.StrictMode>,
 );
