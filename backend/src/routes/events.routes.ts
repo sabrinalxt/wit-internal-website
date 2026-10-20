@@ -2,7 +2,13 @@ import { Router } from "express";
 import prisma from "../prisma/client";
 import { authenticateToken } from "../middleware/authMiddleware";
 import { authorizeRoles } from "../middleware/authRoles";
-import { getEventById, createEvent, updateEvent, deleteEvent } from "../services/events.service";
+import {
+  getAllEvents,
+  getEventById,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+} from "../services/events.service";
 
 const router = Router();
 
@@ -11,7 +17,7 @@ router.get("/", async (req, res) => {
   console.log("GET /events called");
 
   try {
-    const events = await prisma.event.findMany();
+    const events = await getAllEvents();
     res.json(events);
   } catch (error: any) {
     console.error("Error in getAllEvents: ", error);

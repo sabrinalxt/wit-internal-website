@@ -1,8 +1,14 @@
 import prisma from "../prisma/client";
 
-// Get all events
+// Get all events, with the details the calendar popup shows
 export const getAllEvents = async () => {
-  return prisma.user.findMany();
+  return prisma.event.findMany({
+    orderBy: { start_at: "asc" },
+    include: {
+      proposal: { select: { proposal_id: true, proposal_name: true, proposal_type: true } },
+      admin: { select: { first_name: true, last_name: true } },
+    },
+  });
 };
 
 // Get event by ID
