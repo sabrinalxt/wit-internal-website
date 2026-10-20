@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CircleAlert, CircleCheck, X } from "lucide-react";
-import { login } from "../api/client";
+import { login, setToken } from "../api/client";
 
 type Toast = { type: "success" | "error"; title: string; text: string };
 
@@ -34,6 +34,7 @@ export default function LoginPage() {
     try {
       const result = await login(email, password);
       // TODO(auth-context-routes): hand result.token and result.user to the auth context
+      setToken(result.token);
       showToast({
         type: "success",
         title: "Signed in",
