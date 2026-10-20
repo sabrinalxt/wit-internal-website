@@ -1,36 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { login } from "../api/client";
-
-type Toast = { type: "success" | "error"; title: string; text: string };
-
-const TOAST_MS = 4000;
+import { useToast } from "../components/ui/toast";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<Toast | null>(null);
-  const [toastLeaving, setToastLeaving] = useState(false);
-
-  function showToast(next: Toast) {
-    setToastLeaving(false);
-    setToast(next);
-  }
-
-  // Start the fade-out after TOAST_MS; the popup is removed when the fade-out ends
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToastLeaving(true), TOAST_MS);
-    return () => clearTimeout(timer);
-  }, [toast]);
+  const { showToast, clearToast, toastElement } = useToast();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setToast(null);
+    clearToast();
     try {
       const result = await login(email, password);
       // TODO(auth-context-routes): hand result.token and result.user to the auth context
@@ -55,49 +38,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-2 py-10">
-      {toast && (
-        <div className="fixed inset-x-0 top-6 z-50 flex justify-center px-4 pointer-events-none">
-          <div
-            role={toast.type === "error" ? "alert" : "status"}
-            onAnimationEnd={(e) => {
-              if (e.animationName === "toast-out") setToast(null);
-            }}
-            className={`pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-xl border border-slate-100 bg-white shadow-lg ${
-              toastLeaving ? "toast-leave" : "toast-enter"
-            }`}
-          >
-            <div className="flex items-start gap-3 px-4 py-3">
-              {toast.type === "success" ? (
-                <CircleCheck
-                  aria-hidden="true"
-                  className="mt-0.5 h-5 w-5 shrink-0 text-green-600"
-                />
-              ) : (
-                <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-              )}
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-900">{toast.title}</p>
-                <p className="text-sm text-slate-600">{toast.text}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setToastLeaving(true)}
-                aria-label="Close"
-                className="-m-1 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
-              >
-                <X aria-hidden="true" className="h-4 w-4" />
-              </button>
-            </div>
-            <div
-              aria-hidden="true"
-              style={{ animationDuration: `${TOAST_MS}ms` }}
-              className={`toast-progress absolute bottom-0 left-0 h-1 w-full ${
-                toast.type === "success" ? "bg-green-500" : "bg-red-500"
-              }`}
-            />
-          </div>
-        </div>
-      )}
+      {toastElement}
       <div className="bg-white rounded-xl shadow-soft border border-slate-100 w-full max-w-md px-8 py-10">
         <div style={styles.header}>
           <h2 className="accent-purple text-2xl font-bold mb-1">Welcome back!</h2>
