@@ -1,179 +1,94 @@
 import { Router } from "express";
-import prisma from "../prisma/client";
-import { authenticateToken } from "../middleware/authMiddleware";
-import { authorizeRoles } from "../middleware/authRoles";
-import { NotImplemented } from "../middleware/errorHandler";
+import { AuthRequest, authenticateToken } from "../middleware/authMiddleware";
+import { AppError } from "../middleware/errorHandler";
 import {
-  getAllProposals,
-  getProposalById,
+  Actor,
+  approveProposal,
   createProposal,
-  updateProposal,
   deleteProposal,
+  getProposal,
+  listProposals,
+  listReviewers,
+  pillarApproveProposal,
+  rejectProposal,
+  submitProposal,
+  updateProposal,
 } from "../services/proposals.service";
 
 const router = Router();
 
-// TODO(proposals-api): remove this guard once the handlers below are reviewed and
-// the workflow transitions are implemented. Until then every /proposals call is a 501.
-router.use((req, res, next) => next(NotImplemented("proposals-api")));
+// Express 5 forwards rejected promises from async handlers to the error handler,
+// so handlers here do not need try/catch.
+router.use(authenticateToken);
+
+// The caller always comes from the verified token (the JWT stores userId as a string)
+function getActor(req: AuthRequest): Actor {
+  const userId = Number(req.user?.userId);
+  if (!req.user || !Number.isInteger(userId)) {
+    throw new AppError(403, "Invalid token payload");
+  }
+  return { userId, roles: req.user.roles };
+}
+
+// TODO(validation-error-handler): replace with real request validation
+function parseId(value: string): number {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new AppError(400, "Invalid id");
+  }
+  return id;
+}
 
 // GET /proposals
-router.get("/", async (req, res) => {
-  console.log("GET /proposals called");
-  try {
-    const proposals = await getAllProposals();
-    res.json(proposals);
-  } catch (error: any) {
-    console.error("Error in getAllProposals:", error);
-    res.status(500).json({ message: error.message });
-  }
+router.get("/", async (req: AuthRequest, res) => {
+  res.json(await listProposals(getActor(req), req.query));
+});
+
+// GET /proposals/reviewers (must stay above /:id)
+router.get("/reviewers", async (req: AuthRequest, res) => {
+  res.json(await listReviewers(getActor(req)));
 });
 
 // GET /proposals/:id
-router.get("/:id", async (req, res) => {
-  console.log("GET /proposals/:id called");
-
-  try {
-    const proposal_id = Number(req.params.id);
-    // TODO(validation-error-handler): replace with real request validation
-    if (isNaN(proposal_id)) {
-      return res.status(400).json({ message: "Invalid id" });
-    }
-    const proposal = await getProposalById(proposal_id);
-
-    if (!proposal) {
-      return res.status(404).json({ message: "Proposal not found" });
-    }
-
-    res.status(200).json(proposal);
-  } catch (error: any) {
-    console.error("Error in getProposalById: ", error);
-    res.status(500).json({ message: error.message });
-  }
+router.get("/:id", async (req: AuthRequest, res) => {
+  res.json(await getProposal(getActor(req), parseId(req.params.id)));
 });
 
 // POST /proposals
-router.post("/", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
-  console.log("POST /proposals called");
-  try {
-    const {
-      proposal_name,
-      proposal_type,
-      proposal_status,
-      date_submitted,
-      date_reviewed,
-      requestor_id,
-      approver_id,
-    } = req.body;
-
-    const requestor = await prisma.user.findUnique({
-      where: { user_id: Number(requestor_id) },
-    });
-
-    if (!requestor) {
-      return res.status(400).json({
-        message: `Requestor with ID ${requestor_id} does not exist.`,
-      });
-    }
-
-    if (approver_id) {
-      const approver = await prisma.user.findUnique({
-        where: { user_id: Number(approver_id) },
-      });
-
-      if (!approver) {
-        return res.status(400).json({
-          message: `Approver with ID ${approver_id} does not exist.`,
-        });
-      }
-    }
-
-    const newProposal = await createProposal({
-      proposal_name,
-      proposal_type,
-      proposal_status,
-      date_submitted: date_submitted ? new Date(date_submitted) : new Date(),
-      date_reviewed: date_reviewed ? new Date(date_reviewed) : new Date(),
-      requestor_id: Number(requestor_id),
-      approver_id: approver_id ? Number(approver_id) : null,
-    });
-
-    console.log("Created proposal: ", newProposal);
-    res.status(201).json(newProposal);
-  } catch (error: any) {
-    console.error("Error in createProposal:", error);
-    res.status(500).json({ message: error.message });
-  }
+router.post("/", async (req: AuthRequest, res) => {
+  res.status(201).json(await createProposal(getActor(req), req.body ?? {}));
 });
 
 // PUT /proposals/:id
-router.put("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
-  console.log("PUT /proposals/:id called");
-  try {
-    const proposal_id = Number(req.params.id);
-    // TODO(validation-error-handler): replace with real request validation
-    if (isNaN(proposal_id)) {
-      return res.status(400).json({ message: "Invalid id" });
-    }
-
-    const existingProposal = await prisma.proposal.findUnique({
-      where: { proposal_id },
-    });
-
-    if (!existingProposal) {
-      return res.status(404).json({ message: "Proposal not found" });
-    }
-
-    const {
-      proposal_name,
-      proposal_type,
-      proposal_status,
-      date_submitted,
-      date_reviewed,
-      requestor_id,
-      approver_id,
-    } = req.body;
-
-    const updatedProposal = await updateProposal(proposal_id, {
-      proposal_name,
-      proposal_type,
-      proposal_status,
-      date_submitted,
-      date_reviewed,
-      requestor_id,
-      approver_id,
-    });
-
-    console.log("Updated proposal: ", updatedProposal);
-    res.status(200).json(updatedProposal);
-  } catch (error: any) {
-    console.error("Error in updateProposal: ", error);
-    res.status(500).json({ message: error.message });
-  }
+router.put("/:id", async (req: AuthRequest, res) => {
+  res.json(await updateProposal(getActor(req), parseId(req.params.id), req.body ?? {}));
 });
 
 // DELETE /proposals/:id
-router.delete("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
-  console.log("DELETE /proposals/:id called");
+router.delete("/:id", async (req: AuthRequest, res) => {
+  await deleteProposal(getActor(req), parseId(req.params.id));
+  res.status(204).send();
+});
 
-  try {
-    const proposal_id = Number(req.params.id);
-    // TODO(validation-error-handler): replace with real request validation
-    if (isNaN(proposal_id)) {
-      return res.status(400).json({ message: "Invalid id" });
-    }
-    const deletedProposal = await deleteProposal(proposal_id);
+// POST /proposals/:id/submit
+router.post("/:id/submit", async (req: AuthRequest, res) => {
+  res.json(await submitProposal(getActor(req), parseId(req.params.id)));
+});
 
-    if (!deletedProposal) {
-      return res.status(404).json({ message: "Proposal not found" });
-    }
+// POST /proposals/:id/pillar-approve
+router.post("/:id/pillar-approve", async (req: AuthRequest, res) => {
+  res.json(await pillarApproveProposal(getActor(req), parseId(req.params.id)));
+});
 
-    console.log("Deleted Proposal: ", deletedProposal);
-    res.status(200).json(deletedProposal);
-  } catch (error: any) {
-    console.error("Error in deleteProposal: ", error);
-    res.status(500).json({ message: error.message });
-  }
+// POST /proposals/:id/approve
+router.post("/:id/approve", async (req: AuthRequest, res) => {
+  res.json(await approveProposal(getActor(req), parseId(req.params.id)));
+});
+
+// POST /proposals/:id/reject  body: { comment }
+router.post("/:id/reject", async (req: AuthRequest, res) => {
+  const comment = typeof req.body?.comment === "string" ? req.body.comment : null;
+  res.json(await rejectProposal(getActor(req), parseId(req.params.id), comment));
 });
 
 export default router;
