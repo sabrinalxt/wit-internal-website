@@ -1,63 +1,62 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ApiError, setToken, signUp } from "../api/client";
 
 export default function SignupPage() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
+    setError(null);
+    
+    // Client side check (server also checks this)
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
-    // TODO(login-signup-wiring): call the signup endpoint (claim a pre-created account)
-    console.log({ firstName, lastName, email, password });
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await signUp(email, password);
+      setToken(result.token);
+      navigate("/");
+    } catch (err) {
+      if (err instanceof TypeError) {
+        // throws a TypeError when the server can't be reached
+        setError("Can't reach the server. Please try again later.");
+      } else if (err instanceof ApiError && err.status === 403) {
+        setError(`${err.message}. Please contact an admin.`);
+      } else {
+        setError(err instanceof Error ? err.message : "Sign up failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
+
+  const inputClass =
+    "w-full rounded-xl border border-[#d7cff7] bg-[#faf8ff] px-4 py-3 outline-none focus:border-[#5a34ea]";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-2 py-10">
-      <div className="bg-white rounded-xl shadow-soft border border-slate-100 w-full max-w-lg px-8 py-10">
-        <div style={styles.header}>
+      <div className="bg-white rounded-xl shadow-soft border border-slate-100 w-full max-w-md px-8 py-10">
+        <div className="text-center mb-4">
           <h2 className="accent-purple text-2xl font-bold mb-1">Create your account</h2>
-          <p style={styles.subtitle}>Join the community</p>
+          <p className="text-[#5c5b73]">Use admin approved email to sign in</p>
         </div>
 
-        <form onSubmit={onSubmit} style={styles.form}>
-          <div style={styles.row2}>
-            <div style={styles.fieldCol}>
-              <label style={styles.label} htmlFor="first">
-                First name
-              </label>
-              <input
-                id="first"
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                style={styles.input}
-                required
-              />
-            </div>
-            <div style={styles.fieldCol}>
-              <label style={styles.label} htmlFor="last">
-                Last name
-              </label>
-              <input
-                id="last"
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                style={styles.input}
-                required
-              />
-            </div>
-          </div>
-
-          <label style={styles.label} htmlFor="email">
+        <form onSubmit={onSubmit} className="flex flex-col gap-2.5">
+          <label className="text-[13px] text-[#4b4763]" htmlFor="email">
             Email
           </label>
           <input
@@ -66,63 +65,68 @@ export default function SignupPage() {
             placeholder="name@nus.edu.sg"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
+            className={inputClass}
             required
+            autoComplete="email"
           />
 
-          <label style={styles.label} htmlFor="password">
+          <label className="text-[13px] text-[#4b4763]" htmlFor="password">
             Password
           </label>
-          <div style={styles.passwordRow}>
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ ...styles.input, paddingRight: 44 }}
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              style={styles.eyeButton}
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
+          <input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="At least 8 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={inputClass}
+            required
+            autoComplete="new-password"
+          />
 
-          <label style={styles.label} htmlFor="confirm">
-            Retype password
+          <label className="text-[13px] text-[#4b4763]" htmlFor="confirm">
+            Confirm password
           </label>
-          <div style={styles.passwordRow}>
+          <input
+            id="confirm"
+            type={showPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className={inputClass}
+            required
+            autoComplete="new-password"
+          />
+
+          <label className="flex items-center gap-2 text-sm text-[#4b4763]">
             <input
-              id="confirm"
-              type={showConfirm ? "text" : "password"}
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              style={{ ...styles.input, paddingRight: 44 }}
-              required
+              type="checkbox"
+              checked={showPassword}
+              onChange={(e) => setShowPassword(e.target.checked)}
             />
-            <button
-              type="button"
-              onClick={() => setShowConfirm((s) => !s)}
-              aria-label={showConfirm ? "Hide password" : "Show password"}
-              style={styles.eyeButton}
-            >
-              {showConfirm ? "Hide" : "Show"}
-            </button>
-          </div>
+            Show passwords
+          </label>
+
+          {error && (
+            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-purple-accent text-white font-semibold py-3 mt-2 hover:brightness-105 transition"
+            disabled={loading}
+            className="w-full rounded-lg bg-purple-accent text-white font-semibold py-3 mt-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Create account
+            {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
+
+        <div className="mt-4 text-center text-[#5c5b73]">
+          Already have an account?{" "}
+          <Link to="/login" className="text-[#5a34ea]">
+            Log in
+          </Link>
+        </div>
       </div>
     </div>
   );
