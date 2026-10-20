@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CircleAlert, CircleCheck, X } from "lucide-react";
 import { login } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 type Toast = { type: "success" | "error"; title: string; text: string };
 
@@ -14,6 +15,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [toastLeaving, setToastLeaving] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? "/";
+
+  const { signIn } = useAuth();
 
   function showToast(next: Toast) {
     setToastLeaving(false);
@@ -33,12 +40,8 @@ export default function LoginPage() {
     setToast(null);
     try {
       const result = await login(email, password);
-      // TODO(auth-context-routes): hand result.token and result.user to the auth context
-      showToast({
-        type: "success",
-        title: "Signed in",
-        text: `Welcome back, ${result.user.first_name}!`,
-      });
+      signIn(result);
+      navigate(from, { replace: true });
     } catch (err) {
       // fetch throws a TypeError when the server can't be reached
       const text =
