@@ -460,11 +460,18 @@ async function applyTransition(
 
 export async function submitProposal(actor: Actor, proposal_id: number) {
   const result = await applyTransition("submit", actor, proposal_id);
+
   notify("proposal submitted", async () => {
     const context = await loadNotificationContext(proposal_id);
+
     if (!context?.pillarLead) return;
-    await sendProposalSubmittedEmail({ ...context.base, recipient: context.pillarLead });
+
+    await sendProposalSubmittedEmail({
+      ...context.base,
+      recipient: context.pillarLead,
+    });
   });
+
   return result;
 }
 
