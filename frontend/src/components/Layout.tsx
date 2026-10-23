@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import NavBar from "./NavBar";
 
 type LayoutProps = {
@@ -32,21 +33,16 @@ export default function Layout({ children }: LayoutProps) {
             "linear-gradient(180deg, rgba(120, 90, 200, 0.28) 0%, rgba(120, 90, 200, 0.00) 100%)",
         }}
       >
-        <img
-          src={"/logo.png"}
-          alt="WIT logo"
-          style={{
-            height: 120,
-            width: 120,
-            objectFit: "contain",
-            position: "absolute",
-            left: 16,
-            top: 14,
-          }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-        />
+        <Link to="/" aria-label="Go to home" style={{ position: "absolute", left: 16, top: 14 }}>
+          <img
+            src={"/logo.png"}
+            alt="WIT logo"
+            style={{ height: 120, width: 120, objectFit: "contain", display: "block" }}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        </Link>
         <div style={{ textAlign: "center", width: "100%" }}>
           <h1
             style={{

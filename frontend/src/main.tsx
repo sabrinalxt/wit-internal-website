@@ -11,38 +11,47 @@ import ReviewPage from "./pages/ReviewPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import AdminMembersPage from "./pages/AdminMembersPage";
 import AdminRolesPage from "./pages/AdminRolesPage";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute, { GuestRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { PAGE_ROLES } from "./auth/access";
 import "./index.css";
+
+// Wraps a page so only signed-in users with the right roles (from PAGE_ROLES) can open it
+function guard(path: string, page: React.ReactNode) {
+  return <ProtectedRoute roles={PAGE_ROLES[path]}>{page}</ProtectedRoute>;
+}
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
     children: [
+      // Public pages
+      {
+        path: "login",
+        element: (
+          <GuestRoute>
+            <LoginPage />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "signup",
+        element: (
+          <GuestRoute>
+            <SignupPage />
+          </GuestRoute>
+        ),
+      },
+
+      // Signed-in pages
       { index: true, element: <HomePage /> },
-      { path: "login", element: <LoginPage /> },
-      { path: "signup", element: <SignupPage /> },
-      { path: "proposals", element: <ProposalsPage /> },
-      { path: "review", element: <ReviewPage /> },
-      { path: "calendar", element: <CalendarPage /> },
-      { path: "templates", element: <TemplatesPage /> },
-      {
-        path: "admin/members",
-        element: (
-          <ProtectedRoute roles={["Admin"]}>
-            <AdminMembersPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "admin/roles",
-        element: (
-          <ProtectedRoute roles={["Admin"]}>
-            <AdminRolesPage />
-          </ProtectedRoute>
-        ),
-      },
+      { path: "proposals", element: guard("/proposals", <ProposalsPage />) },
+      { path: "review", element: guard("/review", <ReviewPage />) },
+      { path: "calendar", element: guard("/calendar", <CalendarPage />) },
+      { path: "templates", element: guard("/templates", <TemplatesPage />) },
+      { path: "admin/members", element: guard("/admin/members", <AdminMembersPage />) },
+      { path: "admin/roles", element: guard("/admin/roles", <AdminRolesPage />) },
     ],
   },
 ]);
