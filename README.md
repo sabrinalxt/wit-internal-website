@@ -82,11 +82,21 @@ Backend (`backend/.env`, see `backend/.env.example`):
 | `JWT_SECRET`        | yes      |                         | Signs login tokens              |
 | `PORT`              | no       | `4000`                  | API port                        |
 | `CORS_ORIGIN`       | no       | `http://localhost:5173` | Frontend origin allowed by CORS |
+| `NODE_ENV`          | no       | `development`           | Runtime environment             |
+| `EMAIL_PROVIDER`    | no       | console in development, SMTP in production | Email delivery provider |
+| `EMAIL_FROM`        | no       | development placeholder | Sender address; required for SMTP |
+| `APP_URL`           | no       | `CORS_ORIGIN`           | Base URL used in email links    |
 | `SEED_DEV_PASSWORD` | no       | built-in dev value      | Password given to seeded users  |
 
 Frontend (`frontend/.env`): `VITE_API_BASE_URL` (default `http://localhost:4000`).
 
 Never commit `.env` files. Only `.env.example` files are tracked.
+
+In development, the default email provider is `console`, so proposal notifications are printed
+in the backend terminal and are not sent. To use SMTP, set `EMAIL_PROVIDER=smtp`, `EMAIL_FROM`,
+`SMTP_HOST`, and the optional `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, and `SMTP_PASS` variables.
+SMTP credentials must be supplied together. Production defaults to SMTP and does not allow the
+console provider.
 
 ## Seed data (development only)
 
