@@ -9,6 +9,9 @@ export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
+// Fired on window when the server rejects our token. AuthContext listens and signs the user out.
+export const AUTH_EXPIRED_EVENT = "wit:auth-expired";
+
 // Errors
 export class ApiError extends Error {
   constructor(
@@ -17,6 +20,27 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+// Sends a request with the signed-in user's token and turns error replies into ApiError.
+// A 401, or a 403 saying the token is invalid/expired, means the session is over.
+// (A plain 403 "Forbidden" is a role problem, so the user stays signed in.)
+async function authFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers);
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    const message: string = errorBody?.error ?? `Request failed: ${res.status}`;
+    if (res.status === 401 || (res.status === 403 && /invalid|expired/i.test(message))) {
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
+    throw new ApiError(res.status, message);
+  }
+  return res.json() as Promise<T>;
 }
 
 export async function getHealth(): Promise<string> {
@@ -57,74 +81,32 @@ export async function signUp(email: string, password: string): Promise<LoginResp
 
 // Admin functionalities
 
-export async function getUsers(): Promise<AdminUser[]> {
-  const res = await fetch(`${API_BASE}/users`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errorBody?.error ?? `Request failed: ${res.status}`);
-  }
-  return res.json();
+export function getUsers(): Promise<AdminUser[]> {
+  return authFetch<AdminUser[]>("/users");
 }
 
-export async function createApprovedUser(user: {
+export function createApprovedUser(user: {
   first_name: string;
   last_name: string;
   email: string;
   roles: RoleName[];
 }): Promise<AdminUser> {
-  const res = await fetch(`${API_BASE}/users`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
-    body: JSON.stringify(user),
-  });
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errorBody?.error ?? `Request failed: ${res.status}`);
-  }
-  return res.json();
+  return authFetch<AdminUser>("/users", { method: "POST", body: JSON.stringify(user) });
 }
 
-export async function updateUserRoles(userId: number, roles: RoleName[]): Promise<AdminUser> {
-  const res = await fetch(`${API_BASE}/users/${userId}/roles`, {
+export function updateUserRoles(userId: number, roles: RoleName[]): Promise<AdminUser> {
+  return authFetch<AdminUser>(`/users/${userId}/roles`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
-    },
     body: JSON.stringify({ roles }),
   });
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errorBody?.error ?? `Request failed: ${res.status}`);
-  }
-  return res.json();
 }
 
-export async function deleteUser(userId: number): Promise<{ user_id: number; deleted: true }> {
-  const res = await fetch(`${API_BASE}/users/${userId}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errorBody?.error ?? `Request failed: ${res.status}`);
-  }
-  return res.json();
+export function deleteUser(userId: number): Promise<{ user_id: number; deleted: true }> {
+  return authFetch(`/users/${userId}`, { method: "DELETE" });
 }
+
 // Events
 
-export async function getEvents(): Promise<CalendarEvent[]> {
-  const res = await fetch(`${API_BASE}/events`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errorBody?.error ?? `Request failed: ${res.status}`);
-  }
-  return res.json();
+export function getEvents(): Promise<CalendarEvent[]> {
+  return authFetch<CalendarEvent[]>("/events");
 }
