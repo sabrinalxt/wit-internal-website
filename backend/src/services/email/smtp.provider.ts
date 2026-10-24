@@ -25,6 +25,7 @@ export class SmtpEmailProvider implements EmailProvider {
     await this.transporter.sendMail({
       from: message.from,
       to: message.to,
+      cc: message.cc,
       subject: message.subject,
       text: message.text,
       html: message.html,

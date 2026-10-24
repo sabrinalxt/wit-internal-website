@@ -9,6 +9,7 @@ export class ConsoleEmailProvider implements EmailProvider {
         "[email:console] (not actually sent)",
         `From:    ${message.from}`,
         `To:      ${message.to}`,
+        ...(message.cc ? [`Cc:      ${message.cc}`] : []),
         `Subject: ${message.subject}`,
         "",
         message.text,

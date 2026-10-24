@@ -7,6 +7,7 @@ export interface RenderedEmail {
 export interface EmailMessage extends RenderedEmail {
   from: string;
   to: string;
+  cc?: string;
 }
 
 export interface EmailProvider {

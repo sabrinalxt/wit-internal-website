@@ -31,8 +31,12 @@ function getProvider(): EmailProvider {
   return provider;
 }
 
-export async function sendEmail(to: string, content: RenderedEmail): Promise<void> {
-  await getProvider().send({ from: env.EMAIL_FROM, to, ...content });
+export async function sendEmail(
+  to: string,
+  content: RenderedEmail,
+  options: { cc?: string } = {},
+): Promise<void> {
+  await getProvider().send({ from: env.EMAIL_FROM, to, cc: options.cc, ...content });
 }
 
 export function notify(label: string, task: () => Promise<void>): void {
@@ -47,6 +51,7 @@ export interface ProposalEmailContext {
   proposalType: string;
   requestor: Contact;
   recipient: Contact;
+  cc?: Contact;
   actor?: { name: string };
   comment?: string | null;
 }
@@ -71,7 +76,7 @@ export const sendProposalPillarApprovedEmail = (context: ProposalEmailContext) =
   sendEmail(context.recipient.email, proposalPillarApproved(toData(context)));
 
 export const sendProposalApprovedEmail = (context: ProposalEmailContext) =>
-  sendEmail(context.recipient.email, proposalApproved(toData(context)));
+  sendEmail(context.recipient.email, proposalApproved(toData(context)), { cc: context.cc?.email });
 
 export const sendProposalRejectedEmail = (context: ProposalEmailContext) =>
   sendEmail(context.recipient.email, proposalRejected(toData(context)));

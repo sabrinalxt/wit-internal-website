@@ -480,11 +480,11 @@ export async function pillarApproveProposal(actor: Actor, proposal_id: number) {
   notify("proposal pillar-approved", async () => {
     const context = await loadNotificationContext(proposal_id);
     if (!context?.approver) return;
-    const approver = result.status_history.at(-1)?.changed_by;
+    const pillarLead = result.status_history.at(-1)?.changed_by;
     await sendProposalPillarApprovedEmail({
       ...context.base,
       recipient: context.approver,
-      actor: approver ? { name: approver.name } : undefined,
+      actor: pillarLead ? { name: pillarLead.name } : undefined,
     });
   });
   return result;
@@ -495,7 +495,11 @@ export async function approveProposal(actor: Actor, proposal_id: number) {
   notify("proposal approved", async () => {
     const context = await loadNotificationContext(proposal_id);
     if (!context) return;
-    await sendProposalApprovedEmail({ ...context.base, recipient: context.base.requestor });
+    await sendProposalApprovedEmail({
+      ...context.base,
+      recipient: context.base.requestor,
+      cc: context.pillarLead ?? undefined,
+    });
   });
   return result;
 }
