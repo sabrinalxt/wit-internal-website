@@ -9,6 +9,14 @@ import {
   decideTransition,
   hasAnyRole,
 } from "./proposalTransitions";
+import {
+  Contact,
+  notify,
+  sendProposalApprovedEmail,
+  sendProposalPillarApprovedEmail,
+  sendProposalRejectedEmail,
+  sendProposalSubmittedEmail,
+} from "./email";
 
 // The verified token's user. Always built from req.user, never from the request body.
 export interface Actor {
@@ -349,8 +357,41 @@ export async function deleteProposal(actor: Actor, proposal_id: number) {
   await prisma.proposal.delete({ where: { proposal_id } });
 }
 
-// ---------- workflow transitions ----------
+const contactSelect = { first_name: true, last_name: true, email: true } as const;
 
+type ContactRow = { first_name: string; last_name: string; email: string };
+
+function toContact(user: ContactRow): Contact {
+  return { name: `${user.first_name} ${user.last_name}`, email: user.email };
+}
+
+async function loadNotificationContext(proposal_id: number) {
+  const proposal = await prisma.proposal.findUnique({
+    where: { proposal_id },
+    select: {
+      proposal_id: true,
+      proposal_name: true,
+      proposal_type: true,
+      requestor: { select: contactSelect },
+      pillar_lead: { select: contactSelect },
+      approver: { select: contactSelect },
+    },
+  });
+  if (!proposal) return null;
+
+  return {
+    base: {
+      proposalId: proposal.proposal_id,
+      proposalName: proposal.proposal_name,
+      proposalType: proposal.proposal_type,
+      requestor: toContact(proposal.requestor),
+    },
+    pillarLead: proposal.pillar_lead ? toContact(proposal.pillar_lead) : null,
+    approver: proposal.approver ? toContact(proposal.approver) : null,
+  };
+}
+
+// ---------- workflow transitions ----------
 const FAILURE_STATUS: Record<TransitionFailureKind, number> = {
   forbidden: 403,
   invalid_status: 400,
@@ -419,24 +460,62 @@ async function applyTransition(
 
 export async function submitProposal(actor: Actor, proposal_id: number) {
   const result = await applyTransition("submit", actor, proposal_id);
-  // TODO(email-triggers): notify pillar lead of new submission
+
+  notify("proposal submitted", async () => {
+    const context = await loadNotificationContext(proposal_id);
+
+    if (!context?.pillarLead) return;
+
+    await sendProposalSubmittedEmail({
+      ...context.base,
+      recipient: context.pillarLead,
+    });
+  });
+
   return result;
 }
 
 export async function pillarApproveProposal(actor: Actor, proposal_id: number) {
   const result = await applyTransition("pillar-approve", actor, proposal_id);
-  // TODO(email-triggers): notify approver of pillar lead approval
+  notify("proposal pillar-approved", async () => {
+    const context = await loadNotificationContext(proposal_id);
+    if (!context?.approver) return;
+    const pillarLead = result.status_history.at(-1)?.changed_by;
+    await sendProposalPillarApprovedEmail({
+      ...context.base,
+      recipient: context.approver,
+      actor: pillarLead ? { name: pillarLead.name } : undefined,
+    });
+  });
   return result;
 }
 
 export async function approveProposal(actor: Actor, proposal_id: number) {
   const result = await applyTransition("approve", actor, proposal_id);
-  // TODO(email-triggers): notify requestor of final approval
+  notify("proposal approved", async () => {
+    const context = await loadNotificationContext(proposal_id);
+    if (!context) return;
+    await sendProposalApprovedEmail({
+      ...context.base,
+      recipient: context.base.requestor,
+      cc: context.pillarLead ?? undefined,
+    });
+  });
   return result;
 }
 
 export async function rejectProposal(actor: Actor, proposal_id: number, comment: string | null) {
   const result = await applyTransition("reject", actor, proposal_id, comment);
-  // TODO(email-triggers): notify requestor of rejection
+  notify("proposal rejected", async () => {
+    const context = await loadNotificationContext(proposal_id);
+    if (!context) return;
+    const rejecter = result.status_history.at(-1)?.changed_by;
+    await sendProposalRejectedEmail({
+      ...context.base,
+      recipient: context.base.requestor,
+      actor: rejecter ? { name: rejecter.name } : undefined,
+      comment: result.rejection_reason,
+    });
+  });
   return result;
 }
