@@ -33,3 +33,36 @@ export type CalendarEvent = {
   proposal: { proposal_id: number; proposal_name: string; proposal_type: string } | null;
   admin: { first_name: string; last_name: string };
 };
+
+export type ProposalStatus = "DRAFT" | "SUBMITTED" | "PILLAR_APPROVED" | "APPROVED" | "REJECTED";
+export type ProposalType = "IPA" | "FA";
+
+export type ProposalPerson = {
+  id: number;
+  name: string;
+};
+
+export type Proposal = {
+  proposal_id: number;
+  proposal_name: string;
+  proposal_type: ProposalType;
+  proposal_status: ProposalStatus;
+  drive_link: string | null;
+  rejection_reason: string | null;
+  date_submitted: string | null;
+  date_reviewed: string | null;
+  parent_proposal_id: number | null;
+  requestor: ProposalPerson;
+  pillar_lead: ProposalPerson | null;
+  approver: ProposalPerson | null;
+};
+
+export type ProposalReviewer = {
+  id: number;
+  name: string;
+};
+
+export type ProposalReviewers = {
+  pillarLeads: ProposalReviewer[];
+  approvers: ProposalReviewer[];
+};

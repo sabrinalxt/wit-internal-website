@@ -1,18 +1,21 @@
-import type { LoginResponse, AdminUser, RoleName, CalendarEvent } from "../types";
+import type {
+  AdminUser,
+  CalendarEvent,
+  LoginResponse,
+  Proposal,
+  ProposalReviewers,
+  ProposalType,
+  RoleName,
+} from "../types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
-
-// Token storage
 const TOKEN_KEY = "wit_token";
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
-
-// Fired on window when the server rejects our token. AuthContext listens and signs the user out.
 export const AUTH_EXPIRED_EVENT = "wit:auth-expired";
 
-// Errors
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -22,9 +25,6 @@ export class ApiError extends Error {
   }
 }
 
-// Sends a request with the signed-in user's token and turns error replies into ApiError.
-// A 401, or a 403 saying the token is invalid/expired, means the session is over.
-// (A plain 403 "Forbidden" is a role problem, so the user stays signed in.)
 async function authFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const token = getToken();
@@ -40,6 +40,7 @@ async function authFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(res.status, message);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -49,9 +50,6 @@ export async function getHealth(): Promise<string> {
   return res.text();
 }
 
-// Auth
-
-// Login
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
@@ -65,7 +63,6 @@ export async function login(email: string, password: string): Promise<LoginRespo
   return res.json();
 }
 
-// Sign up
 export async function signUp(email: string, password: string): Promise<LoginResponse> {
   const res = await fetch(`${API_BASE}/auth/signup`, {
     method: "POST",
@@ -78,8 +75,6 @@ export async function signUp(email: string, password: string): Promise<LoginResp
   }
   return res.json();
 }
-
-// Admin functionalities
 
 export function getUsers(): Promise<AdminUser[]> {
   return authFetch<AdminUser[]>("/users");
@@ -105,8 +100,53 @@ export function deleteUser(userId: number): Promise<{ user_id: number; deleted: 
   return authFetch(`/users/${userId}`, { method: "DELETE" });
 }
 
-// Events
-
 export function getEvents(): Promise<CalendarEvent[]> {
   return authFetch<CalendarEvent[]>("/events");
+}
+
+export function getProposals(): Promise<Proposal[]> {
+  return authFetch<Proposal[]>("/proposals");
+}
+
+export function getProposalReviewers(): Promise<ProposalReviewers> {
+  return authFetch<ProposalReviewers>("/proposals/reviewers");
+}
+
+export function createProposal(input: {
+  proposal_name: string;
+  proposal_type: ProposalType;
+  drive_link?: string;
+  pillar_lead_id?: number;
+  approver_id?: number;
+  parent_proposal_id?: number;
+}): Promise<Proposal> {
+  return authFetch<Proposal>("/proposals", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateProposal(
+  proposalId: number,
+  input: {
+    proposal_name: string;
+    proposal_type: ProposalType;
+    drive_link?: string;
+    pillar_lead_id?: number;
+    approver_id?: number;
+    parent_proposal_id?: number;
+  },
+): Promise<Proposal> {
+  return authFetch<Proposal>(`/proposals/${proposalId}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export function submitProposal(proposalId: number): Promise<Proposal> {
+  return authFetch<Proposal>(`/proposals/${proposalId}/submit`, { method: "POST" });
+}
+
+export function deleteProposal(proposalId: number): Promise<void> {
+  return authFetch<void>(`/proposals/${proposalId}`, { method: "DELETE" });
 }
