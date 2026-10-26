@@ -1,7 +1,7 @@
 import { Router } from "express";
-import prisma from "../prisma/client";
-import { authenticateToken } from "../middleware/authMiddleware";
+import { AuthRequest, authenticateToken } from "../middleware/authMiddleware";
 import { authorizeRoles } from "../middleware/authRoles";
+import { AppError } from "../middleware/errorHandler";
 import {
   getAllEvents,
   getEventById,
@@ -12,134 +12,53 @@ import {
 
 const router = Router();
 
-// GET /event
+// Express 5 forwards rejected promises from async handlers to the error handler,
+// so handlers here do not need try/catch.
+// Any logged-in user can read events (the calendar is for everyone); writes are Admin only.
+router.use(authenticateToken);
+
+// The caller always comes from the verified token (the JWT stores userId as a string)
+function getUserId(req: AuthRequest): number {
+  const userId = Number(req.user?.userId);
+  if (!req.user || !Number.isInteger(userId)) {
+    throw new AppError(403, "Invalid token payload");
+  }
+  return userId;
+}
+
+// TODO(validation-error-handler): replace with real request validation
+function parseId(value: string): number {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new AppError(400, "Invalid id");
+  }
+  return id;
+}
+
+// GET /events?from=&to=
 router.get("/", async (req, res) => {
-  console.log("GET /events called");
-
-  try {
-    const events = await getAllEvents();
-    res.json(events);
-  } catch (error: any) {
-    console.error("Error in getAllEvents: ", error);
-    res.status(500).json({ message: error.message });
-  }
+  res.json(await getAllEvents(req.query));
 });
 
-// GET /event/:id
+// GET /events/:id
 router.get("/:id", async (req, res) => {
-  console.log("GET /events/:id called");
-
-  try {
-    const event_id = Number(req.params.id);
-    // TODO(validation-error-handler): replace with real request validation
-    if (isNaN(event_id)) {
-      return res.status(400).json({ message: "Invalid id" });
-    }
-    const event = await getEventById(event_id);
-
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    res.status(200).json(event);
-  } catch (error: any) {
-    console.error("Error in getEventById: ", error);
-    res.status(500).json({ message: error.message });
-  }
+  res.json(await getEventById(parseId(req.params.id)));
 });
 
-// CREATE /event
-router.post("/", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
-  console.log("CREATE /events called");
-
-  try {
-    const { event_name, start_at, end_at, pillar, proposal_id, admin_id } = req.body;
-
-    // Check if proposal exists
-    const proposal = await prisma.proposal.findUnique({
-      where: { proposal_id: Number(proposal_id) },
-    });
-
-    if (!proposal) {
-      return res.status(400).json({
-        message: `Proposal with ID ${proposal_id} does not exist.`,
-      });
-    }
-
-    // Create event
-    const newEvent = await createEvent({
-      event_name,
-      start_at: new Date(start_at),
-      end_at: end_at ? new Date(end_at) : null,
-      pillar,
-      proposal_id: Number(proposal_id),
-      admin_id: Number(admin_id),
-    });
-
-    console.log("Created Event:", newEvent);
-    res.status(201).json(newEvent);
-  } catch (error: any) {
-    console.error("Error in createEvent:", error);
-    res.status(500).json({ message: error.message });
-  }
+// POST /events (admin_id in the body is ignored)
+router.post("/", authorizeRoles(["Admin"]), async (req: AuthRequest, res) => {
+  res.status(201).json(await createEvent(getUserId(req), req.body ?? {}));
 });
 
-// PUT /event/:id
-router.put("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
-  console.log("PUT /events called");
-  try {
-    const event_id = Number(req.params.id);
-    // TODO(validation-error-handler): replace with real request validation
-    if (isNaN(event_id)) {
-      return res.status(400).json({ message: "Invalid id" });
-    }
-
-    // Check if the event exists
-    const existingEvent = await prisma.event.findUnique({
-      where: { event_id },
-    });
-
-    if (!existingEvent) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    const { event_name, start_at, end_at, pillar, proposal_id, admin_id } = req.body;
-
-    const updatedEvent = await updateEvent(event_id, {
-      event_name,
-      start_at,
-      end_at,
-      pillar,
-      proposal_id,
-      admin_id,
-    });
-
-    console.log("Updated event: ", updatedEvent);
-    res.status(200).json(updatedEvent);
-  } catch (error: any) {
-    console.error("Error in updateEvent: ", error);
-    res.status(500).json({ message: error.message });
-  }
+// PUT /events/:id (admin_id cannot be changed)
+router.put("/:id", authorizeRoles(["Admin"]), async (req, res) => {
+  res.json(await updateEvent(parseId(req.params.id), req.body ?? {}));
 });
 
-// DELETE event
-router.delete("/:id", authenticateToken, authorizeRoles(["Admin"]), async (req, res) => {
-  console.log("DELETE /events/:id called");
-
-  try {
-    const event_id = Number(req.params.id);
-    // TODO(validation-error-handler): replace with real request validation
-    if (isNaN(event_id)) {
-      return res.status(400).json({ message: "Invalid id" });
-    }
-    const deletedEvent = await deleteEvent(event_id);
-
-    console.log("Deleted Event: ", deletedEvent);
-    res.status(200).json(deletedEvent);
-  } catch (error: any) {
-    console.error("Error in deleteEvent: ", error);
-    res.status(500).json({ message: error.message });
-  }
+// DELETE /events/:id
+router.delete("/:id", authorizeRoles(["Admin"]), async (req, res) => {
+  await deleteEvent(parseId(req.params.id));
+  res.status(204).send();
 });
 
 export default router;
