@@ -3,6 +3,7 @@ import type {
   CalendarEvent,
   LoginResponse,
   Proposal,
+  ProposalDetail,
   ProposalReviewers,
   ProposalType,
   RoleName,
@@ -34,7 +35,11 @@ async function authFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (!res.ok) {
     const errorBody = await res.json().catch(() => null);
-    const message: string = errorBody?.error ?? `Request failed: ${res.status}`;
+    // Two error shapes: { error: "..." } (auth middleware) and { error: { message } } (newer routes)
+    const message: string =
+      typeof errorBody?.error === "string"
+        ? errorBody.error
+        : (errorBody?.error?.message ?? `Request failed: ${res.status}`);
     if (res.status === 401 || (res.status === 403 && /invalid|expired/i.test(message))) {
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
     }
@@ -112,39 +117,46 @@ export function getProposalReviewers(): Promise<ProposalReviewers> {
   return authFetch<ProposalReviewers>("/proposals/reviewers");
 }
 
-export function createProposal(input: {
+export function getProposal(proposalId: number): Promise<ProposalDetail> {
+  return authFetch<ProposalDetail>(`/proposals/${proposalId}`);
+}
+
+export type CreateProposalInput = {
   proposal_name: string;
   proposal_type: ProposalType;
   drive_link?: string;
   pillar_lead_id?: number;
   approver_id?: number;
   parent_proposal_id?: number;
-}): Promise<Proposal> {
-  return authFetch<Proposal>("/proposals", {
+};
+
+export function createProposal(input: CreateProposalInput): Promise<ProposalDetail> {
+  return authFetch<ProposalDetail>("/proposals", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
 
+// Type and parent can't change after creation. null clears an optional field.
+export type UpdateProposalInput = {
+  proposal_name?: string;
+  drive_link?: string | null;
+  pillar_lead_id?: number | null;
+  approver_id?: number | null;
+};
+
 export function updateProposal(
   proposalId: number,
-  input: {
-    proposal_name: string;
-    proposal_type: ProposalType;
-    drive_link?: string;
-    pillar_lead_id?: number;
-    approver_id?: number;
-    parent_proposal_id?: number;
-  },
-): Promise<Proposal> {
-  return authFetch<Proposal>(`/proposals/${proposalId}`, {
+  input: UpdateProposalInput,
+): Promise<ProposalDetail> {
+  return authFetch<ProposalDetail>(`/proposals/${proposalId}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
 }
 
-export function submitProposal(proposalId: number): Promise<Proposal> {
-  return authFetch<Proposal>(`/proposals/${proposalId}/submit`, { method: "POST" });
+export function submitProposal(proposalId: number): Promise<ProposalDetail> {
+  return authFetch<ProposalDetail>(`/proposals/${proposalId}/submit`, { method: "POST" });
 }
 
 export function deleteProposal(proposalId: number): Promise<void> {
