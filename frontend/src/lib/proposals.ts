@@ -1,5 +1,5 @@
 import { ApiError } from "../api/client";
-import type { Proposal, ProposalStatus } from "../types";
+import type { AuthUser, Proposal, ProposalStatus } from "../types";
 
 // Display names for the backend statuses (tech doc: shown beside each proposal)
 export const STATUS_LABELS: Record<ProposalStatus, string> = {
@@ -28,6 +28,20 @@ export function missingForSubmit(proposal: Proposal): string[] {
 export function joinWithAnd(items: string[]): string {
   if (items.length <= 1) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+// True when this proposal is waiting for this user's decision: the assigned pillar lead
+// once it's submitted, or the assigned approver once the pillar lead has approved it.
+// Nobody reviews their own proposal. The backend enforces all of this too.
+export function awaitsReviewBy(proposal: Proposal, user: AuthUser): boolean {
+  if (proposal.requestor.id === user.id) return false;
+  if (proposal.proposal_status === "SUBMITTED") {
+    return proposal.pillar_lead?.id === user.id && user.roles.includes("PillarLead");
+  }
+  if (proposal.proposal_status === "PILLAR_APPROVED") {
+    return proposal.approver?.id === user.id && user.roles.includes("Approver");
+  }
+  return false;
 }
 
 export function formatDate(value: string | null): string {
