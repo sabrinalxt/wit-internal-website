@@ -57,6 +57,22 @@ export type Proposal = {
   approver: ProposalPerson | null;
 };
 
+// One row of a proposal's status history (oldest first)
+export type ProposalHistoryEntry = {
+  id: number;
+  from_status: ProposalStatus | null;
+  to_status: ProposalStatus;
+  comment: string | null;
+  created_at: string;
+  changed_by: ProposalPerson;
+};
+
+// GET /proposals/:id, and every create/edit/transition response
+export type ProposalDetail = Proposal & {
+  parent: { id: number; name: string; status: ProposalStatus } | null;
+  status_history: ProposalHistoryEntry[];
+};
+
 export type ProposalReviewer = {
   id: number;
   name: string;

@@ -1,308 +1,383 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ApiError,
-  createProposal,
   deleteProposal,
   getProposalReviewers,
   getProposals,
   submitProposal,
-  updateProposal,
 } from "../api/client";
-import { Badge } from "../components/ui/badge";
+import ProposalDetailDialog from "../components/proposals/ProposalDetailDialog";
+import ProposalFormDialog from "../components/proposals/ProposalFormDialog";
+import StatusBadge from "../components/proposals/StatusBadge";
 import { Button } from "../components/ui/button";
 import { Dialog } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
-import type { Proposal, ProposalReviewers, ProposalStatus, ProposalType } from "../types";
+import { useToast } from "../components/ui/toast";
+import { useAuth } from "../context/AuthContext";
+import {
+  errorMessage,
+  formatDate,
+  isEditable,
+  joinWithAnd,
+  missingForSubmit,
+  STATUS_LABELS,
+} from "../lib/proposals";
+import type { Proposal, ProposalReviewers, ProposalStatus } from "../types";
 
-const statusLabels: Record<ProposalStatus, string> = {
-  DRAFT: "Draft",
-  SUBMITTED: "Submitted",
-  PILLAR_APPROVED: "Pillar approved",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
-};
-
-function formatDate(value: string | null) {
-  return value ? new Date(value).toLocaleDateString() : "—";
-}
-
-function getErrorMessage(error: unknown) {
-  return error instanceof ApiError || error instanceof Error ? error.message : "Something went wrong";
-}
+// What the create/edit form is doing. null = closed.
+type FormState = { proposal: Proposal | null; initialError?: string } | null;
 
 export default function ProposalsPage() {
+  const { user } = useAuth();
+  const { showToast, toastElement } = useToast();
+
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [reviewers, setReviewers] = useState<ProposalReviewers>({ pillarLeads: [], approvers: [] });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [reloadCount, setReloadCount] = useState(0);
+
   const [nameFilter, setNameFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | "">("");
-  const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formError, setFormError] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    type: "IPA" as ProposalType,
-    driveLink: "",
-    pillarLeadId: "",
-    approverId: "",
-    parentId: "",
-  });
 
+  const [form, setForm] = useState<FormState>(null);
+  const [formKey, setFormKey] = useState(0);
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [detailKey, setDetailKey] = useState(0);
+  const [toDelete, setToDelete] = useState<Proposal | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+
+  const userId = user?.id;
+
+  // Load proposals and the reviewer dropdown lists. Runs again when reloadCount changes.
   useEffect(() => {
+    let active = true;
     Promise.all([getProposals(), getProposalReviewers()])
-      .then(([items, availableReviewers]) => {
-        setProposals(items);
-        setReviewers(availableReviewers);
+      .then(([items, people]) => {
+        if (!active) return;
+        // GET /proposals also returns proposals the user can see as a reviewer
+        // (e.g. a Requestor who is also an Approver). This page only shows their own.
+        setProposals(items.filter((item) => item.requestor.id === userId));
+        setReviewers(people);
+        setLoadError("");
       })
-      .catch((loadError: unknown) => setError(getErrorMessage(loadError)))
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((error: unknown) => active && setLoadError(errorMessage(error)))
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [reloadCount, userId]);
 
   const filtered = useMemo(
     () =>
       proposals.filter(
         (proposal) =>
-          proposal.proposal_name.toLowerCase().includes(nameFilter.toLowerCase()) &&
+          proposal.proposal_name.toLowerCase().includes(nameFilter.trim().toLowerCase()) &&
           (!statusFilter || proposal.proposal_status === statusFilter),
       ),
     [nameFilter, proposals, statusFilter],
   );
 
+  // An FA can only be created from one of your own approved IPAs
   const approvedIpas = proposals.filter(
     (proposal) => proposal.proposal_type === "IPA" && proposal.proposal_status === "APPROVED",
   );
 
-  function resetForm() {
-    setForm({ name: "", type: "IPA", driveLink: "", pillarLeadId: "", approverId: "", parentId: "" });
-    setFormError("");
+  // Put the server's latest copy of a proposal into the list (new ones go on top)
+  function upsert(saved: Proposal) {
+    setProposals((current) =>
+      current.some((item) => item.proposal_id === saved.proposal_id)
+        ? current.map((item) => (item.proposal_id === saved.proposal_id ? saved : item))
+        : [saved, ...current],
+    );
   }
 
-  function openCreate() {
-    resetForm();
-    setEditingId(null);
-    setOpen(true);
+  function openForm(proposal: Proposal | null, initialError?: string) {
+    setDetailId(null);
+    setForm(initialError ? { proposal, initialError } : { proposal });
+    setFormKey((key) => key + 1);
   }
 
-  function openEdit(proposal: Proposal) {
-    setForm({
-      name: proposal.proposal_name,
-      type: proposal.proposal_type,
-      driveLink: proposal.drive_link ?? "",
-      pillarLeadId: proposal.pillar_lead?.id.toString() ?? "",
-      approverId: proposal.approver?.id.toString() ?? "",
-      parentId: proposal.parent_proposal_id?.toString() ?? "",
-    });
-    setFormError("");
-    setEditingId(proposal.proposal_id);
-    setOpen(true);
+  function openDetail(proposalId: number) {
+    setDetailId(proposalId);
+    setDetailKey((key) => key + 1);
   }
 
-  async function handleCreate() {
-    if (!form.name.trim()) {
-      setFormError("Proposal name is required.");
+  function handleSaved(saved: Proposal, submitted: boolean, submitError?: string) {
+    upsert(saved);
+    setForm(null);
+    if (submitError) {
+      showToast({ type: "error", title: "Saved, but not submitted", text: submitError });
+    } else if (submitted) {
+      showToast({
+        type: "success",
+        title: "Submitted",
+        text: "Your pillar lead will review it next.",
+      });
+    } else {
+      showToast({
+        type: "success",
+        title: "Saved",
+        text: `"${saved.proposal_name}" was saved as a draft.`,
+      });
+    }
+  }
+
+  async function handleSubmit(proposal: Proposal) {
+    // Missing fields: open the form instead of letting the API reject it
+    const missing = missingForSubmit(proposal);
+    if (missing.length > 0) {
+      openForm(proposal, `Add ${joinWithAnd(missing)} before submitting.`);
       return;
     }
-    if (form.type === "FA" && !form.parentId) {
-      setFormError("Select an approved IPA for this FA.");
-      return;
-    }
+    setBusyId(proposal.proposal_id);
     try {
-      const input = {
-        proposal_name: form.name.trim(),
-        proposal_type: form.type,
-        ...(form.driveLink.trim() ? { drive_link: form.driveLink.trim() } : {}),
-        ...(form.pillarLeadId ? { pillar_lead_id: Number(form.pillarLeadId) } : {}),
-        ...(form.approverId ? { approver_id: Number(form.approverId) } : {}),
-        ...(form.parentId ? { parent_proposal_id: Number(form.parentId) } : {}),
-      };
-      const proposal = editingId === null
-        ? await createProposal(input)
-        : await updateProposal(editingId, input);
+      const updated = await submitProposal(proposal.proposal_id);
+      upsert(updated);
+      if (detailId === proposal.proposal_id) setDetailKey((key) => key + 1);
+      showToast({
+        type: "success",
+        title: proposal.proposal_status === "REJECTED" ? "Resubmitted" : "Submitted",
+        text: "Your pillar lead will review it next.",
+      });
+    } catch (error) {
+      handleActionError(error, "Couldn't submit");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    const proposal = toDelete;
+    setBusyId(proposal.proposal_id);
+    try {
+      await deleteProposal(proposal.proposal_id);
       setProposals((current) =>
-        editingId === null
-          ? [proposal, ...current]
-          : current.map((item) => (item.proposal_id === editingId ? proposal : item)),
+        current.filter((item) => item.proposal_id !== proposal.proposal_id),
       );
-      resetForm();
-      setEditingId(null);
-      setOpen(false);
-    } catch (createError) {
-      setFormError(getErrorMessage(createError));
-    }
-  }
-
-  async function handleSubmit(proposalId: number) {
-    setBusyId(proposalId);
-    try {
-      const updated = await submitProposal(proposalId);
-      setProposals((current) => current.map((proposal) => (proposal.proposal_id === proposalId ? updated : proposal)));
-    } catch (submitError) {
-      setError(getErrorMessage(submitError));
+      setToDelete(null);
+      setDetailId(null);
+      showToast({
+        type: "success",
+        title: "Deleted",
+        text: `"${proposal.proposal_name}" was deleted.`,
+      });
+    } catch (error) {
+      setToDelete(null);
+      handleActionError(error, "Couldn't delete");
     } finally {
       setBusyId(null);
     }
   }
 
-  async function handleDelete(proposalId: number) {
-    if (!window.confirm("Delete this draft proposal?")) return;
-    setBusyId(proposalId);
-    try {
-      await deleteProposal(proposalId);
-      setProposals((current) => current.filter((proposal) => proposal.proposal_id !== proposalId));
-    } catch (deleteError) {
-      setError(getErrorMessage(deleteError));
-    } finally {
-      setBusyId(null);
+  function handleActionError(error: unknown, title: string) {
+    // 409 = someone changed it at the same time, so reload to show the real state
+    if (error instanceof ApiError && error.status === 409) {
+      setReloadCount((count) => count + 1);
     }
+    showToast({ type: "error", title, text: errorMessage(error) });
   }
 
   return (
-    <div className="min-h-screen w-full px-4 py-4 md:px-8">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">My proposals</h1>
-          <p className="mt-1 text-sm text-slate-500">Create, submit, and track your proposals.</p>
+    <div className="flex justify-center px-2 py-8 md:px-12">
+      {toastElement}
+      <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-6 shadow-soft md:p-8">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[#1a1340]">My proposals</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Create IPAs and FAs, submit them for review and track where they are.
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => openForm(null)}>
+            New proposal
+          </Button>
         </div>
-        <button
-          onClick={openCreate}
-          className="rounded-lg px-5 py-2 text-base font-semibold"
-          style={{ background: "#A0A0DB", color: "#F6F1E7" }}
-        >
-          Create
-        </button>
-      </div>
 
-      {error ? <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
-      <div className="mb-4 grid gap-3 md:grid-cols-2">
-        <div className="space-y-1">
-          <label className="text-sm text-slate-600">Name</label>
-          <Input placeholder="Search by name" value={nameFilter} onChange={(event) => setNameFilter(event.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-600">Status</label>
-          <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as ProposalStatus | "")}>
-            <option value="">All statuses</option>
-            {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </Select>
-        </div>
-      </div>
-
-      {loading ? <p className="py-8 text-center text-slate-500">Loading proposals...</p> : null}
-      {!loading && filtered.length === 0 ? (
-        <div className="rounded-xl bg-white/70 p-8 text-center text-slate-500 shadow-soft">No proposals found.</div>
-      ) : null}
-      {!loading && filtered.length > 0 ? (
-        <div className="overflow-hidden rounded-xl bg-white/70 shadow-soft backdrop-blur">
-          <table className="w-full border-separate border-spacing-0">
-            <thead>
-              <tr className="bg-slate-50 text-left text-sm text-slate-600">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Submitted</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((proposal) => (
-                <tr key={proposal.proposal_id} className="border-t border-slate-100 text-sm">
-                  <td className="px-4 py-3 font-medium">{proposal.proposal_name}</td>
-                  <td className="px-4 py-3">{proposal.proposal_type}</td>
-                  <td className="px-4 py-3">{formatDate(proposal.date_submitted)}</td>
-                  <td className="px-4 py-3">{renderStatus(proposal.proposal_status)}</td>
-                  <td className="px-4 py-3">
-                    {proposal.proposal_status === "DRAFT" || proposal.proposal_status === "REJECTED" ? (
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(proposal)}>
-                          Edit
-                        </Button>
-                        <Button size="sm" disabled={busyId === proposal.proposal_id} onClick={() => void handleSubmit(proposal.proposal_id)}>
-                          {proposal.proposal_status === "REJECTED" ? "Resubmit" : "Submit"}
-                        </Button>
-                        {proposal.proposal_status === "DRAFT" ? (
-                        <Button size="sm" variant="outline" disabled={busyId === proposal.proposal_id} onClick={() => void handleDelete(proposal.proposal_id)}>
-                          Delete
-                        </Button>
-                        ) : null}
-                      </div>
-                    ) : <span className="text-slate-400">—</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-
-      <Dialog open={open} onOpenChange={setOpen} title={editingId === null ? "Create proposal" : "Edit proposal"}>
-        <div className="space-y-3">
+        <div className="mb-4 grid gap-3 md:grid-cols-2">
           <div className="space-y-1">
-            <label className="text-sm text-slate-600">Name</label>
-            <Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Proposal name" />
+            <label htmlFor="filter-name" className="text-sm text-slate-600">
+              Search
+            </label>
+            <Input
+              id="filter-name"
+              placeholder="Search by name"
+              value={nameFilter}
+              onChange={(event) => setNameFilter(event.target.value)}
+            />
           </div>
           <div className="space-y-1">
-            <label className="text-sm text-slate-600">Type</label>
-            <Select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ProposalType, parentId: "" })}>
-              <option value="IPA">IPA</option>
-              <option value="FA">FA</option>
+            <label htmlFor="filter-status" className="text-sm text-slate-600">
+              Status
+            </label>
+            <Select
+              id="filter-status"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as ProposalStatus | "")}
+            >
+              <option value="">All statuses</option>
+              {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </Select>
           </div>
-          {form.type === "FA" ? (
-            <div className="space-y-1">
-              <label className="text-sm text-slate-600">Approved IPA</label>
-              <Select value={form.parentId} onChange={(event) => setForm({ ...form, parentId: event.target.value })}>
-                <option value="">Select an IPA</option>
-                {approvedIpas.map((proposal) => <option key={proposal.proposal_id} value={proposal.proposal_id}>{proposal.proposal_name}</option>)}
-              </Select>
-            </div>
-          ) : null}
-          <div className="space-y-1">
-            <label className="text-sm text-slate-600">Drive link (optional)</label>
-            <Input value={form.driveLink} onChange={(event) => setForm({ ...form, driveLink: event.target.value })} placeholder="https://drive.google.com/..." />
+        </div>
+
+        {loadError ? (
+          <div role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            {loadError}{" "}
+            <button
+              type="button"
+              className="font-medium underline"
+              onClick={() => {
+                setLoading(true);
+                setReloadCount((count) => count + 1);
+              }}
+            >
+              Try again
+            </button>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ReviewerSelect label="Pillar lead" value={form.pillarLeadId} options={reviewers.pillarLeads} onChange={(value) => setForm({ ...form, pillarLeadId: value })} />
-            <ReviewerSelect label="Approver" value={form.approverId} options={reviewers.approvers} onChange={(value) => setForm({ ...form, approverId: value })} />
+        ) : null}
+
+        {loading ? <p className="py-8 text-center text-slate-500">Loading proposals...</p> : null}
+
+        {!loading && !loadError && filtered.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-slate-500">
+            {proposals.length === 0
+              ? "You don't have any proposals yet. Click New proposal to start one."
+              : "No proposals match your search."}
           </div>
-          {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={() => void handleCreate()}>{editingId === null ? "Create draft" : "Save changes"}</Button>
+        ) : null}
+
+        {!loading && filtered.length > 0 ? (
+          <div className="overflow-x-auto rounded-xl border border-slate-100">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium">Type</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Submitted</th>
+                  <th className="px-4 py-3 font-medium">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((proposal) => {
+                  const busy = busyId === proposal.proposal_id;
+                  return (
+                    <tr key={proposal.proposal_id} className="border-t border-slate-100 align-top">
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          className="text-left font-medium text-[#1a1340] hover:underline"
+                          onClick={() => openDetail(proposal.proposal_id)}
+                        >
+                          {proposal.proposal_name}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">{proposal.proposal_type}</td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={proposal.proposal_status} />
+                        {proposal.proposal_status === "REJECTED" && proposal.rejection_reason ? (
+                          <p
+                            className="mt-1 max-w-xs truncate text-xs text-red-700"
+                            title={proposal.rejection_reason}
+                          >
+                            {proposal.rejection_reason}
+                          </p>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {formatDate(proposal.date_submitted)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openDetail(proposal.proposal_id)}
+                          >
+                            View
+                          </Button>
+                          {isEditable(proposal) ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => openForm(proposal)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                disabled={busy}
+                                onClick={() => void handleSubmit(proposal)}
+                              >
+                                {proposal.proposal_status === "REJECTED" ? "Resubmit" : "Submit"}
+                              </Button>
+                            </>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
+        ) : null}
+      </div>
+
+      {form && user ? (
+        <ProposalFormDialog
+          key={formKey}
+          proposal={form.proposal}
+          reviewers={reviewers}
+          approvedIpas={approvedIpas}
+          currentUserId={user.id}
+          {...(form.initialError ? { initialError: form.initialError } : {})}
+          onClose={() => setForm(null)}
+          onSaved={handleSaved}
+        />
+      ) : null}
+
+      {detailId !== null ? (
+        <ProposalDetailDialog
+          key={detailKey}
+          proposalId={detailId}
+          busy={busyId === detailId}
+          onClose={() => setDetailId(null)}
+          onEdit={(proposal) => openForm(proposal)}
+          onSubmit={(proposal) => void handleSubmit(proposal)}
+          onDelete={(proposal) => setToDelete(proposal)}
+        />
+      ) : null}
+
+      <Dialog
+        open={toDelete !== null}
+        onOpenChange={() => setToDelete(null)}
+        title="Delete this draft?"
+      >
+        <p className="text-sm text-slate-600">
+          "{toDelete?.proposal_name}" will be deleted for good. This can't be undone.
+        </p>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setToDelete(null)}>
+            Cancel
+          </Button>
+          <Button variant="danger" disabled={busyId !== null} onClick={() => void confirmDelete()}>
+            Delete
+          </Button>
         </div>
       </Dialog>
     </div>
   );
-}
-
-function ReviewerSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: { id: number; name: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="text-sm text-slate-600">{label}</label>
-      <Select value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="">Select {label.toLowerCase()}</option>
-        {options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
-      </Select>
-    </div>
-  );
-}
-
-function renderStatus(status: ProposalStatus) {
-  if (status === "APPROVED") return <Badge variant="success">{statusLabels[status]}</Badge>;
-  if (status === "REJECTED") return <Badge variant="destructive">{statusLabels[status]}</Badge>;
-  if (status === "DRAFT") return <Badge>{statusLabels[status]}</Badge>;
-  return <Badge variant="info">{statusLabels[status]}</Badge>;
 }
