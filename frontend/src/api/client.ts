@@ -159,6 +159,22 @@ export function submitProposal(proposalId: number): Promise<ProposalDetail> {
   return authFetch<ProposalDetail>(`/proposals/${proposalId}/submit`, { method: "POST" });
 }
 
+// Review actions. Each returns the updated proposal with its new history row.
+export function pillarApproveProposal(proposalId: number): Promise<ProposalDetail> {
+  return authFetch<ProposalDetail>(`/proposals/${proposalId}/pillar-approve`, { method: "POST" });
+}
+
+export function approveProposal(proposalId: number): Promise<ProposalDetail> {
+  return authFetch<ProposalDetail>(`/proposals/${proposalId}/approve`, { method: "POST" });
+}
+
+export function rejectProposal(proposalId: number, comment: string): Promise<ProposalDetail> {
+  return authFetch<ProposalDetail>(`/proposals/${proposalId}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
+}
+
 export function deleteProposal(proposalId: number): Promise<void> {
   return authFetch<void>(`/proposals/${proposalId}`, { method: "DELETE" });
 }
