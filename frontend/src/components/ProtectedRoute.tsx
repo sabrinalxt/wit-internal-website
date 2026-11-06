@@ -9,8 +9,11 @@ type ProtectedRouteProps = {
 };
 
 export default function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
+
+  // Still loading inital session check: don't render anything yet
+  if (loading) return null;
 
   // Not logged in: go to /login and direct to desired page after login
   if (!user) {

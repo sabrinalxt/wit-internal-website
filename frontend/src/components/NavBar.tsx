@@ -24,8 +24,8 @@ export default function NavBar() {
     (link) => !link.roles || link.roles.some((role) => user?.roles.includes(role)),
   );
 
-  function onLogout() {
-    signOut(); // clear token
+  async function onLogout() {
+    await signOut(); // clear cookies and auth state
     navigate("/login");
   }
 

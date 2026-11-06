@@ -1,59 +1,44 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { clearToken, getToken, setToken } from "../api/client";
-import type { AuthUser, LoginResponse } from "../types";
-
-// localStorage key for the user object
-const USER_KEY = "wit_user";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { getCurrentUser, logout as logoutRequest } from "../api/client";
+import type { AuthUser } from "../types";
 
 type AuthContextValue = {
   user: AuthUser | null;
-  signIn: (result: LoginResponse) => void; // login/signup success
-  signOut: () => void;
+  loading: boolean;
+  signIn: (user: AuthUser) => void;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return payload.exp * 1000 < Date.now();
-  } catch {
-    return true;
-  }
-}
-
-// Restores the session from localStorage so a page refresh keep user logged in
-function loadStoredUser(): AuthUser | null {
-  const token = getToken();
-  const stored = localStorage.getItem(USER_KEY);
-  if (!token || !stored || isTokenExpired(token)) {
-    clearToken();
-    localStorage.removeItem(USER_KEY);
-    return null;
-  }
-  try {
-    return JSON.parse(stored) as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(loadStoredUser);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  function signIn(result: LoginResponse) {
-    setToken(result.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(result.user));
-    setUser(result.user);
+  useEffect(() => {
+    getCurrentUser()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  function signIn(nextUser: AuthUser) {
+    setUser(nextUser);
   }
 
-  function signOut() {
-    clearToken();
-    localStorage.removeItem(USER_KEY);
-    setUser(null);
+  async function signOut() {
+    try {
+      await logoutRequest();
+    } finally {
+      setUser(null);
+    }
   }
 
-  return <AuthContext.Provider value={{ user, signIn, signOut }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
