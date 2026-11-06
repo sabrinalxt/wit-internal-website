@@ -24,4 +24,5 @@ export const env = {
   DATABASE_URL: required("DATABASE_URL"),
   PORT: port,
   CORS_ORIGIN: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+  NODE_ENV: process.env.NODE_ENV ?? "development",
 };
