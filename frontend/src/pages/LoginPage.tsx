@@ -23,7 +23,7 @@ export default function LoginPage() {
     clearToast();
     try {
       const result = await login(email, password);
-      signIn(result);
+      signIn(result.user);
       navigate(from, { replace: true });
     } catch (err) {
       // fetch throws a TypeError when the server can't be reached

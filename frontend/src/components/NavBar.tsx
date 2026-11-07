@@ -21,9 +21,9 @@ export default function NavBar() {
   // There is no "Home" link: the logo in the header goes to "/", which redirects by role.
   const visibleLinks = links.filter((link) => hasAnyRole(user, PAGE_ROLES[link.to]));
 
-  function onLogout() {
-    signOut();
-    navigate("/login", { replace: true });
+  async function onLogout() {
+    await signOut(); // clear cookies and auth state
+    navigate("/login");
   }
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>

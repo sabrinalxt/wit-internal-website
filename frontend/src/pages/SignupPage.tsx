@@ -37,7 +37,7 @@ export default function SignupPage() {
     try {
       const result = await signUp(email, password);
 
-      signIn(result);
+      signIn(result.user);
 
       navigate("/");
     } catch (err) {

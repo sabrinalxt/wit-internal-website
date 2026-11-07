@@ -9,7 +9,7 @@ import templateRouter from "./routes/templates.routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 const app = express();
-app.use(cors({ origin: env.CORS_ORIGIN }));
+app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 
 // Routes
