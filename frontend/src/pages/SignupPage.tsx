@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, signUp } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../components/ui/toast";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -10,21 +11,25 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { showToast, clearToast, toastElement } = useToast();
 
   const { signIn } = useAuth();
 
+  function showError(text: string) {
+    showToast({ type: "error", title: "Sign up failed", text });
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    
+    clearToast();
+
     // Client side check (server also checks this)
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      showError("Password must be at least 8 characters.");
       return;
     }
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      showError("Passwords do not match.");
       return;
     }
 
@@ -38,11 +43,11 @@ export default function SignupPage() {
     } catch (err) {
       if (err instanceof TypeError) {
         // throws a TypeError when the server can't be reached
-        setError("Can't reach the server. Please try again later.");
+        showError("Can't reach the server. Please try again later.");
       } else if (err instanceof ApiError && err.status === 403) {
-        setError(`${err.message}. Please contact an admin.`);
+        showError(`${err.message}. Please contact an admin.`);
       } else {
-        setError(err instanceof Error ? err.message : "Sign up failed. Please try again.");
+        showError(err instanceof Error ? err.message : "Sign up failed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -54,6 +59,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-2 py-10">
+      {toastElement}
       <div className="bg-white rounded-xl shadow-soft border border-slate-100 w-full max-w-md px-8 py-10">
         <div className="text-center mb-4">
           <h2 className="accent-purple text-2xl font-bold mb-1">Create your account</h2>
@@ -111,17 +117,17 @@ export default function SignupPage() {
             Show passwords
           </label>
 
-          {error && (
-            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </p>
-          )}
-
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-purple-accent text-white font-semibold py-3 mt-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-purple-accent text-white font-semibold py-3 mt-2 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
+            {loading && (
+              <span
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+              />
+            )}
             {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
